@@ -2,6 +2,8 @@
 
 This folder contains coding standards, onboarding configurations, environment variables lists, and JSDoc rules for the CrowdFAQ project.
 
+For a simple explanation of team collaboration and data flow between sub-teams, see the [Team Collaboration & Data Flow Guide](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/docs/team_collaboration_and_data_flow.md).
+
 ---
 
 ## 1. Onboarding Guide for Developers
