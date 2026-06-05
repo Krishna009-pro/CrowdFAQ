@@ -1,6 +1,6 @@
-# Frontend Architecture Blueprint
+# Frontend Architecture Blueprint (MERN Integration)
 
-This document details the directory structure, styling guidelines, page routing, and local setup instructions for the **React + Vite + Tailwind CSS** frontend of CrowdFAQ.
+This document details the folder structure, design parameters, React components, and local configuration files to connect the React application to the Express.js backend.
 
 ---
 
@@ -8,120 +8,110 @@ This document details the directory structure, styling guidelines, page routing,
 
 ```
 frontend/
-├── public/                 # Static assets (favicons, manifest)
+├── public/                 # Static assets
 ├── src/
-│   ├── assets/             # Images, default avatars, background gradients
-│   ├── components/         # Reusable presentation and UI components
-│   │   ├── common/         # Button, Card, Badge, Modal, Input, Spinner
-│   │   ├── layout/         # Navbar, Sidebar, Footer, Breadcrumbs
-│   │   ├── question/       # QuestionCard, AskQuestionForm, TagSelector
-│   │   ├── answer/         # AnswerCard, AnswerForm, CommentSection
-│   │   ├── profile/        # ActivityList, BadgeGrid, ReputationWidget
-│   │   └── ai/             # ChatBotWidget, SimilarityModal
-│   ├── context/            # AuthContext, ThemeContext
-│   ├── hooks/              # useAuth, useDebounce, useQuestion
-│   ├── pages/              # Routing views
-│   │   ├── AuthPage.jsx          # Login & Signup screen
-│   │   ├── Dashboard.jsx         # User Feed & Ask Question gateway
-│   │   ├── QuestionDetail.jsx    # Thread views with Answers & Comments
-│   │   ├── Leaderboard.jsx       # Ranking list (daily/weekly/monthly/all-time)
-│   │   ├── Profile.jsx           # User statistics & earned badges
-│   │   ├── AdminDashboard.jsx    # Category editor, User roles, Reports log
-│   │   └── NotFound.jsx          # Custom error page
-│   ├── services/           # Api wrappers and endpoints
-│   │   └── api.js          # Axios configuration with auth interceptors
-│   ├── utils/              # Text formatting, date parsing, calculations
-│   ├── App.jsx             # Root routing wrapper
-│   ├── index.css           # Global Tailwind utilities & custom styles
-│   └── main.jsx            # React root mounting script
+│   ├── assets/             # CSS styling, custom SVGs, default user avatars
+│   ├── components/         # Modular layout units
+│   │   ├── common/         # Premium Card, Button, Input, Modal wrapper, Spinner
+│   │   ├── layout/         # Header/Navbar, Sidebar, Footer, ProtectedRoute
+│   │   ├── question/       # QuestionFeedCard, AskQuestionForm, TagFilter
+│   │   ├── answer/         # AnswerBlock, WriteAnswerForm, CommentsList
+│   │   └── ai/             # ChatBotPanel, DuplicateWarningModal
+│   ├── context/            # Global context (AuthContext, ThemeContext)
+│   ├── hooks/              # useAuth, useDebounce, useQuestionQuery
+│   ├── pages/              # Routing templates
+│   │   ├── AuthPage.jsx          # Login & SignUp Forms
+│   │   ├── Dashboard.jsx         # Question feed, categories filter
+│   │   ├── QuestionDetail.jsx    # Thread details, comments, verified answers
+│   │   ├── Leaderboard.jsx       # Daily / Weekly / Monthly reputation lists
+│   │   ├── Profile.jsx           # Activity graphs, earned badges list
+│   │   └── AdminDashboard.jsx    # Report logs, moderation panel, category CRUD
+│   ├── services/           # Network request clients
+│   │   └── api.js          # Axios config with JWT header injection
+│   ├── utils/              # Text formatting, parsing dates
+│   ├── App.jsx             # React router switch mappings
+│   ├── index.css           # Global custom classes & Tailwind setup
+│   └── main.jsx            # Entry mount point
 ├── package.json
-├── tailwind.config.js      # Custom theme settings
-└── vite.config.js          # Build & proxy configurations
+├── tailwind.config.js
+└── vite.config.js          # Vite configuration with proxy configurations
 ```
 
 ---
 
-## 2. Design System & Premium Aesthetics
+## 2. Connecting to Express Backend (Vite Proxy)
 
-To deliver a high-end, modern user experience, adhere to these UI tokens and visual styles:
+To prevent Cross-Origin Resource Sharing (CORS) errors during local development, configure a reverse proxy in Vite to forward requests from port `5173` to port `8000`:
 
-### 2.1 Colors
-* **Primary**: Indigo/Violet gradients (`#6366f1` to `#8b5cf6`).
-* **Backgrounds**: Deep charcoal slate (`#0f172a` for dark mode) and soft cream slate (`#f8fafc` for light mode).
-* **Accents**:
-  * Success / Verified: Teal / Emerald (`#10b981`).
-  * Warning / Flagged: Amber (`#f59e0b`).
-  * Danger / Delete: Rose (`#f43f5e`).
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-### 2.2 Typography
-* Font family: `Outfit` (for headings) and `Inter` (for bodies). Include from Google Fonts in `index.html`.
-
-### 2.3 Visual Styles
-* **Glassmorphism**: Use backdrop filters for navbars, sidebars, and overlays:
-  ```css
-  .glass-panel {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  ```
-* **Micro-animations**: Smooth hover transitions for interactive states:
-  ```css
-  .hover-scale {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .hover-scale:hover {
-      transform: translateY(-2px) scale(1.02);
-  }
-  ```
-
----
-
-## 3. Client-Side Routing Configuration
-
-Route guards handle user access:
-
-```jsx
-// src/components/layout/ProtectedRoute.jsx snippet
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-
-export const ProtectedRoute = ({ allowedRoles = [] }) => {
-    const { user, loading } = useAuth();
-
-    if (loading) return <div>Loading account...</div>;
-    if (!user) return <Navigate to="/auth" replace />;
-    
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        return <Navigate to="/dashboard" replace />;
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      }
     }
-
-    return <Outlet />;
-};
-
-// Route structure:
-// <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
-//     <Route path="/admin" element={<AdminDashboard />} />
-// </Route>
+  }
+});
 ```
 
 ---
 
-## 4. Local Development Setup
+## 3. Axios Client Setup with JWT Authorization
 
-1. **Initialize Project** (if starting fresh):
+Set up Axios to automatically read the token and attach it as a Bearer authorization token header to outgoing calls:
+
+```javascript
+// src/services/api.js
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: '/api/v1', // Maps to proxy target http://localhost:8000/api/v1
+});
+
+// Interceptor to inject token on every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+export default api;
+```
+
+---
+
+## 4. UI Design System Guidelines
+
+Maintain premium aesthetics across screens:
+
+* **Dark Mode Strategy**: Toggle `dark` class on root html node. Use classes like `bg-slate-900 text-slate-100 dark:bg-slate-950 dark:text-slate-50`.
+* **Harmonious Accents**:
+  * *Expert Badge*: Blue border with soft cyan radial gradient background.
+  * *Faculty Badge*: Crimson/Red pill with white bold typography.
+  * *Admin Badge*: Golden glow border with metallic yellow fonts.
+* **Micro-interactions**: Use CSS transition variables (`transition-all duration-300 ease-in-out`) on button states, card scaling, and sidebar sliding panels.
+
+---
+
+## 5. Development Launch Steps
+
+1. **Install Dependencies**:
    ```bash
-   npm create vite@latest . -- --template react
-   npm install react-router-dom axios lucide-react classnames
+   npm install
    ```
-2. **Install Tailwind CSS**:
-   ```bash
-   npm install -D tailwindcss postcss autoprefixer
-   npx tailwindcss init -p
-   ```
-3. **Configure tailwind.config.js**:
-   Add support for custom gradients, dark mode selection (`class`), and custom fonts.
-4. **Launch Dev Server**:
+2. **Start Dev Client**:
    ```bash
    npm run dev
    ```

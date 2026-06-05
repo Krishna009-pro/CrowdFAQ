@@ -1,12 +1,12 @@
-# CrowdFAQ - AI-Powered Community FAQ & Knowledge Sharing Platform
+# CrowdFAQ - AI-Powered Community FAQ & Knowledge Sharing Platform (MERN Stack)
 
 CrowdFAQ is a modern, community-driven knowledge-sharing platform where users ask questions, contribute answers, search existing discussions, and receive AI-assisted support. The platform is designed to eliminate repetitive questions, preserve tribal knowledge, and provide verified, searchable, and reliable information for colleges, internship guidance, company knowledge bases, customer support communities, and technical discussion forums.
 
 ---
 
-## 1. High-Level System Architecture
+## 1. High-Level MERN System Architecture
 
-CrowdFAQ utilizes a decoupled multi-tier architecture designed for scalability, low latency, and modular development.
+CrowdFAQ utilizes a decoupled multi-tier architecture designed for scalability, low latency, and modular development using the MERN stack.
 
 ```mermaid
 graph TD
@@ -16,22 +16,21 @@ graph TD
         API_Client[Axios Client]
     end
 
-    subgraph Backend [Application Layer - FastAPI]
-        Gateway[API Router / Auth Gateway]
-        Auth[Auth Service JWT/RBAC]
-        FAQ_Svc[FAQ & Question Service]
-        Game_Svc[Gamification & Reputation engine]
-        AI_Svc[AI Integration Service]
+    subgraph Backend [Application Layer - Node.js & Express]
+        Gateway[Express Router & Middlewares]
+        Auth[Auth Controller JWT/RBAC]
+        FAQ_Svc[FAQ & Question Controllers]
+        Game_Svc[Gamification & Reputation Engine]
+        AI_Svc[AI Orchestration Svc]
     end
 
     subgraph Database [Storage & Search Layer]
-        PG[(PostgreSQL Database)]
-        VectorDB[(pgvector Extension)]
+        MongoDB[(MongoDB Database)]
+        AtlasSearch[(MongoDB Atlas Vector Search)]
     end
 
     subgraph External [AI & LLM Services]
-        Gemini[Gemini API]
-        ST[Sentence Transformers]
+        Gemini[Gemini API - google/generative-ai]
     end
 
     UI --> RC
@@ -42,14 +41,13 @@ graph TD
     Gateway --> Game_Svc
     Gateway --> AI_Svc
 
-    Auth --> PG
-    FAQ_Svc --> PG
-    Game_Svc --> PG
+    Auth --> MongoDB
+    FAQ_Svc --> MongoDB
+    Game_Svc --> MongoDB
     
-    AI_Svc --> VectorDB
+    AI_Svc --> AtlasSearch
     AI_Svc --> Gemini
-    AI_Svc --> ST
-    VectorDB --- PG
+    AtlasSearch --- MongoDB
 ```
 
 ---
@@ -66,7 +64,7 @@ graph TD
 | **Admin** | Full system permissions, manage users/roles, manage categories, handle reports, access analytics, configure AI parameters. | Gold Badge |
 
 ### 2.2 Core Modules (MVP)
-1. **Authentication & Authorization**: JWT token-based authentication, password hashing with bcrypt, role-based route guards, password recovery, email verification.
+1. **Authentication & Authorization**: JWT token-based authentication, password hashing with bcryptjs, role-based route middleware, password recovery, email verification.
 2. **User Profiles**: Display user reputation, earned badges, question/answer history, and activity statistics.
 3. **Question Management**: Rich Markdown editor, categories, tags, attachment support (PNG, JPG, PDF), questions following, and editing history.
 4. **Answer Management**: Rich answers support, nested replies (comments), and author-selected or expert-verified "Best Answer" flagging.
@@ -75,11 +73,11 @@ graph TD
 7. **Report & Moderation System**: Report flag triggers (spam, offensive, wrong info) routed to Moderator dashboard.
 
 ### 2.3 Advanced AI Features
-* **AI Duplicate Question Detection**: As users type, the system runs semantic distance checks against existing questions. If similarity matches above a threshold (e.g., 0.82), a non-obtrusive modal recommends reading the existing thread first.
-* **AI Semantic Search**: Utilizes dense vector embeddings to search questions based on intent rather than pure keyword matching (e.g., matches "how to apply for internships" to "internship application process").
-* **AI Answer Summarization**: Leverages the Gemini API to compile summaries of threads with multiple answers.
+* **AI Duplicate Question Detection**: As users type, the system runs semantic vector queries in MongoDB Atlas. If similarity matches above a threshold (e.g., 0.85), a modal recommends reading the existing thread.
+* **AI Semantic Search**: Utilizes dense vector embeddings to search questions based on intent rather than pure keyword matching using MongoDB Atlas Vector Search.
+* **AI Answer Summarization**: Leverages the Gemini API (Node SDK) to compile summaries of threads with multiple answers.
 * **AI Chat Assistant**: An in-app assistant that answers user queries instantly using FAQ databases and vectorized community knowledge.
-* **AI Suggested Tags**: Automatically parses titles/descriptions using LLM prompts or entity models to suggest matching tags and categories before posting.
+* **AI Suggested Tags**: Automatically parses titles/descriptions using LLM prompts to suggest matching tags and categories before posting.
 * **AI Related Questions**: "People also asked" recommendations shown on every question detail view.
 
 ### 2.4 Gamification System
@@ -102,10 +100,10 @@ To drive high-quality contributions, the platform employs a gamified progression
 
 ## 3. Technology Stack
 
-* **Frontend**: React (with Vite for build tooling), Tailwind CSS (for modern UI utility classes), React Router, Lucide Icons.
-* **Backend**: FastAPI (Python), SQLAlchemy (ORM), Alembic (database migrations), Pydantic (data validation).
-* **Database**: PostgreSQL (with `pgvector` for storing and query semantic vector embeddings).
-* **AI & LLM**: Gemini API (content generation, summarization), Sentence Transformers (`all-MiniLM-L6-v2` or similar model for generating local text embeddings).
+* **Frontend**: React (Vite), Tailwind CSS, React Router, Lucide Icons, Axios.
+* **Backend**: Node.js, Express.js.
+* **Database**: MongoDB (Mongoose ODM) with MongoDB Atlas Vector Search.
+* **AI & LLM**: Gemini API via `@google/generative-ai` Node.js SDK.
 
 ---
 
@@ -113,12 +111,12 @@ To drive high-quality contributions, the platform employs a gamified progression
 
 ```
 CrowdFAQ/
-├── ai/            # AI features (Vectorization, LLM prompts, similarity search)
-├── backend/       # FastAPI Backend application (routes, business logic, ORM)
-├── database/      # Database migrations, DB schema definitions, seed files
+├── ai/            # AI configurations, prompt managers, and text embedding functions
+├── backend/       # Express Backend (controllers, models, middleware, router)
+├── database/      # Database helper connection scripts, schemas, and seeding scripts
 ├── docs/          # API specifications, development guides, deployment setup
 ├── frontend/      # React client codebase (pages, components, assets)
-└── testing/       # Automated test suites (unit, integration, end-to-end)
+└── testing/       # Automated test suites (Jest, Supertest, Vitest)
 ```
 
 For detailed setup and implementation steps for each folder, please refer to the respective sub-README files:

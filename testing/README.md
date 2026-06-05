@@ -1,6 +1,6 @@
-# Testing Strategy & Mocking Blueprint
+# Testing Strategy & Mocking Blueprint (MERN Stack)
 
-This document defines the testing frameworks, directory structures, database transactional fixtures, and mocking conventions for CrowdFAQ.
+This document details the testing framework setup, isolated database test fixtures, and AI SDK mocking routines for CrowdFAQ.
 
 ---
 
@@ -8,130 +8,133 @@ This document defines the testing frameworks, directory structures, database tra
 
 ```
 testing/
-├── backend/                  # Python backend tests
-│   ├── conftest.py           # Pytest shared fixtures (db, client)
-│   ├── test_auth.py          # Signup, login, roles guards
-│   ├── test_questions.py     # Ask, edit, query validation
-│   ├── test_answers.py       # Posts, verifications, gamification updates
+├── backend/                  # Node.js/Express Jest tests
+│   ├── setup.js              # Setup / Teardown hooks for mongodb-memory-server
+│   ├── auth.test.js          # Authentication endpoint verification
+│   ├── questions.test.js     # Question posting, tag validation
 │   └── mocks/
-│       ├── test_ai_mock.py   # Mock routines for LLM / embeddings
-│       └── __init__.py
-├── frontend/                 # React frontend tests
-│   ├── setup.js              # Vitest environment setup
-│   ├── test-utils.jsx        # Custom wrappers for providers (Auth, Route)
-│   ├── components/           # Component unit tests
-│   │   ├── QuestionCard.test.jsx
-│   │   └── ChatBot.test.jsx
-│   └── pages/                # Integration page tests
-│       └── Dashboard.test.jsx
+│       └── aiService.mock.js # Mock scripts for Gemini API SDK
+├── frontend/                 # React unit and integration tests
+│   ├── setup.js              # Vitest global browser mocks
+│   ├── test-utils.jsx        # Wrappers for React Router / Auth Context
+│   └── components/
+│       └── QuestionCard.test.jsx
 └── README.md
 ```
 
 ---
 
-## 2. Backend testing (FastAPI + Pytest)
+## 2. Backend Testing (Jest + Supertest)
 
-We use `pytest` alongside `httpx` to test API routes asynchronously.
+We use `Jest` as our test runner and `supertest` for making mock HTTP requests directly against our Express app object.
 
-### 2.1 Isolated Test Database Configuration
-To ensure tests run in isolation and rollback changes automatically:
-```python
-# testing/backend/conftest.py snippet
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.core.database import Base
-from app.main import app
-from app.deps import get_db
+### 2.1 Database Isolation via `mongodb-memory-server`
+To run test suites locally without modifying a real database, we run an in-memory MongoDB daemon:
 
-TEST_DATABASE_URL = "postgresql://postgres:password@localhost:5432/crowdfaq_test"
-engine = create_engine(TEST_DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+```javascript
+// testing/backend/setup.js
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+let mongoServer;
 
-@pytest.fixture
-def db_session():
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = TestingSessionLocal(bind=connection)
+const connectDB = async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
     
-    yield session
-    
-    session.close()
-    transaction.rollback()
-    connection.close()
+    await mongoose.connect(mongoUri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    });
+};
+
+const disconnectDB = async () => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
+};
+
+const clearDB = async () => {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+        const collection = collections[key];
+        await collection.deleteMany({});
+    }
+};
+
+module.exports = { connectDB, disconnectDB, clearDB };
 ```
 
-### 2.2 Mocking Sentence Transformers & Gemini API
-Running heavy AI models and external API requests during tests is slow, expensive, and fragile. We use mock fixtures:
+Using this inside individual test files:
+```javascript
+// testing/backend/auth.test.js
+const request = require('supertest');
+const app = require('../../backend/src/app');
+const { connectDB, disconnectDB, clearDB } = require('./setup');
 
-```python
-# testing/backend/mocks/test_ai_mock.py snippet
-import pytest
-from unittest.mock import MagicMock
+beforeAll(async () => await connectDB());
+afterAll(async () => await disconnectDB());
+beforeEach(async () => await clearDB());
 
-@pytest.fixture(autouse=True)
-def mock_embedder(monkeypatch):
-    """Mocks the embedder package to return a dummy 384-dim array instantly."""
-    mock_encode = MagicMock(return_value=[0.1] * 384)
-    monkeypatch.setattr("ai.embedder.embedder.get_embedding", mock_encode)
-    return mock_encode
-
-@pytest.fixture(autouse=True)
-def mock_gemini(monkeypatch):
-    """Mocks Gemini generate_content to prevent external API calls."""
-    mock_generate = MagicMock()
-    mock_generate.return_value.text = "This is a mock summary/suggested tags output."
-    
-    # Mocking standard generative model
-    monkeypatch.setattr(
-        "google.generativeai.GenerativeModel.generate_content", 
-        mock_generate
-    )
-    return mock_generate
+describe('POST /api/v1/auth/register', () => {
+    it('should register a user with correct details', async () => {
+        const res = await request(app)
+            .post('/api/v1/auth/register')
+            .send({
+                name: "Test User",
+                email: "test@crowdfaq.com",
+                password: "password123"
+            });
+        expect(res.status).toBe(201);
+        expect(res.body).toHaveProperty('token');
+    });
+});
 ```
 
 ---
 
-## 3. Frontend Testing (React + Vitest)
+### 2.2 Mocking `@google/generative-ai` SDK
+To prevent network request timeouts and costs during test execution, mock the Gemini SDK:
 
-We use `Vitest` with `React Testing Library` for checking rendering and states.
-
-### 3.1 Setup Config
 ```javascript
-// testing/frontend/setup.js
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
-
-// Mock matchMedia for responsive CSS elements
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(), 
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+// testing/backend/mocks/aiService.mock.js
+jest.mock('@google/generative-ai', () => {
+    return {
+        GoogleGenAI: jest.fn().mockImplementation(() => {
+            return {
+                getGenerativeModel: jest.fn().mockReturnValue({
+                    embedContent: jest.fn().mockResolvedValue({
+                        embedding: { values: new Array(768).fill(0.1) }
+                    }),
+                    generateContent: jest.fn().mockResolvedValue({
+                        response: {
+                            text: () => "Mocked Gemini Output"
+                        }
+                    })
+                })
+            };
+        })
+    };
 });
 ```
 
-### 3.2 Running tests
-* **Backend Command**:
-  ```bash
-  cd backend
-  pytest ../testing/backend/
-  ```
-* **Frontend Command**:
-  ```bash
-  cd frontend
-  npm run test
-  ```
+---
+
+## 3. Running Test Suites
+
+### 3.1 Install Test Libraries
+```bash
+cd backend
+npm install --save-dev jest supertest mongodb-memory-server
+```
+
+### 3.2 Add scripts in `backend/package.json`
+```json
+"scripts": {
+  "test": "jest --runInBand --detectOpenHandles"
+}
+```
+
+### 3.3 Execute Command
+```bash
+npm run test
+```
