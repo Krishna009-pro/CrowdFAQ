@@ -126,3 +126,4 @@ For detailed setup and implementation steps for each folder, please refer to the
 * [Frontend Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/frontend/README.md)
 * [Testing Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/testing/README.md)
 * [Docs & Guides](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/docs/README.md)
+* [Team Collaboration & Data Flow Guide](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/docs/team_collaboration_and_data_flow.md)
