@@ -1,0 +1,69 @@
+// Imports Express to create the API application.
+const express = require("express");
+// Imports CORS middleware so the frontend can call the backend.
+const cors = require("cors");
+// Imports cookie parsing middleware for JWT/session cookies.
+const cookieParser = require("cookie-parser");
+
+
+// Shared CORS settings used by Express.
+const { corsOptions } = require("./config/cors");
+
+// Final middleware for 404 and error responses.
+const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
+
+// Routes for answer creation, voting, accepting, and official answers.
+const answerRoutes = require("./routes/answerRoutes");
+
+// Routes for registration/logout and future auth endpoints.
+const authRoutes = require("./routes/authRoutes");
+
+// Routes for root API info and health checks.
+const healthRoutes = require("./routes/healthRoutes");
+
+// Routes for creating and reading questions.
+const questionRoutes = require("./routes/questionRoutes");
+
+// Routes for search and duplicate-question triage.
+const searchRoutes = require("./routes/searchRoutes");
+
+
+// Creates the Express app instance.
+const app = express();
+
+
+// Enables cross-origin frontend requests using the shared CORS rules.
+app.use(cors(corsOptions));
+
+// Parses incoming JSON request bodies up to 1 MB.
+app.use(express.json({ limit: "1mb" }));
+
+// Parses cookies so auth middleware can read token cookies.
+app.use(cookieParser());
+
+
+// Mounts root and health endpoints.
+app.use("/", healthRoutes);
+
+// Mounts search endpoints under /api/v1/search.
+app.use("/api/v1/search", searchRoutes);
+
+// Mounts question endpoints under /api/v1/questions.
+app.use("/api/v1/questions", questionRoutes);
+
+// Mounts answer endpoints under /api/v1/answers.
+app.use("/api/v1/answers", answerRoutes);
+
+// Mounts authentication endpoints under /api/v1/auth.
+app.use("/api/v1/auth", authRoutes);
+
+
+// Handles requests that did not match any route above.
+app.use(notFoundHandler);
+
+// Converts thrown errors into consistent JSON error responses.
+app.use(errorHandler);
+
+
+// Exports the app without starting a server, which keeps tests clean.
+module.exports = app;
