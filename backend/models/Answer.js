@@ -42,6 +42,21 @@ const answerSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // Moderation fields
+    isReported: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    reportReason: {
+      type: String,
+      default: "",
+    },
+    isHidden: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     // Cached upvote count for ranking and display.
     upvoteCount: {
       type: Number,

@@ -27,6 +27,11 @@ const questionRoutes = require("./routes/questionRoutes");
 // Routes for search and duplicate-question triage.
 const searchRoutes = require("./routes/searchRoutes");
 
+// Team C Routes
+const aiRoutes = require("./routes/aiRoutes");
+const chatbotRoutes = require("./routes/chatbotRoutes");
+const moderationRoutes = require("./routes/moderationRoutes");
+
 
 // Creates the Express app instance.
 const app = express();
@@ -56,6 +61,15 @@ app.use("/api/v1/answers", answerRoutes);
 
 // Mounts authentication endpoints under /api/v1/auth.
 app.use("/api/v1/auth", authRoutes);
+
+// Mounts AI endpoints under /api/v1/ai.
+app.use("/api/v1/ai", aiRoutes);
+
+// Mounts Chatbot endpoints under /api/v1/chatbot.
+app.use("/api/v1/chatbot", chatbotRoutes);
+
+// Mounts Moderation endpoints under /api/v1/moderation.
+app.use("/api/v1/moderation", moderationRoutes);
 
 
 // Handles requests that did not match any route above.

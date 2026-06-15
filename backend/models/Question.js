@@ -31,16 +31,36 @@ const questionSchema = new mongoose.Schema(
       default: [],
       index: true,
     },
-    // OpenAI embedding vector used by Atlas Vector Search for semantic matching.
+    // Embedding vector used by Atlas Vector Search for semantic matching.
     embedding: {
       type: [Number],
       default: [],
       validate: {
         validator(value) {
-          return value.length === 0 || value.length === 1536;
+          return value.length === 0 || value.length === 1536 || value.length === 384;
         },
-        message: "Question embedding must contain 1536 dimensions",
+        message: "Question embedding must contain 1536 or 384 dimensions",
       },
+    },
+    // AI-generated summary of the question's answer thread.
+    aiSummary: {
+      type: String,
+      default: "",
+    },
+    // Moderation fields
+    isReported: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    reportReason: {
+      type: String,
+      default: "",
+    },
+    isHidden: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     // Points to an existing question when this question is marked as a duplicate.
     duplicateOf: {

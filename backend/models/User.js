@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // Account standing
+    isSuspended: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
     timestamps: true,
