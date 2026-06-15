@@ -1,4 +1,4 @@
-# FAQ-VLED Executive Summary
+# CrowdFAQ Executive Summary
 
 **Date:** 2026-06-12  
 **Project Status:** 40% Complete - MVP Foundation Ready  

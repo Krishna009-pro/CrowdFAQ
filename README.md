@@ -1,128 +1,231 @@
-# FAQ-VLED
+# CrowdFAQ
 
-FAQ and community Q&A portal with separate frontend and backend workspaces.
+CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React frontend, an Express API, MongoDB-backed question and answer data, real-time updates, and optional OpenAI-powered semantic search.
 
-## Problem Statement & Solution
+## What It Solves
 
-### What Problem Does This Solve?
-- **Support fatigue**: Repetitive questions take time to answer manually
-- **Knowledge fragmentation**: FAQs scattered across docs; no single source of truth
-- **Poor discoverability**: Users can't find answers to common questions
-- **No community involvement**: Users can't help each other or contribute knowledge
+- Reduces repeated support work by centralizing common questions and official answers.
+- Gives users one searchable place to find FAQs and community answers.
+- Lets community members ask questions, contribute answers, and build reputation.
+- Lets admins publish verified official responses.
 
-### How It Solves It
-1. **Unified Knowledge Base** - All FAQs and community Q&A in one searchable portal
-2. **Smart Search** - AI-powered semantic search using OpenAI embeddings to find similar questions
-3. **Community Contributions** - Users can ask questions and community/admins can provide official answers
-4. **Official Responses** - Admins can mark answers as "Official" from Vicharanashala System
-5. **Verified Badges** - Official answers stand out with verified badges
-6. **User Reputation** - Gamification with reputation scores and badges for active contributors
+## Tech Stack
 
-### Methodology
-- **Agile Development** - Iterative updates with feature releases in phases
-- **Monorepo Structure** - Frontend and backend in one repo for easier coordination
-- **Separation of Concerns** - Clean API boundaries between frontend/backend
-- **Environment Management** - Secrets in .env files, never committed to Git
-- **Team Collaboration** - Feature branches, pull requests, code review workflow
+### Frontend
 
-## Architecture
+- React 18
+- React Router
+- Webpack Dev Server
+- Tailwind CSS
+- Framer Motion
+- Axios
+- Zustand
+- Socket.IO client
 
-### Frontend (React 18 + Webpack)
-- SPA built with React Router for navigation
-- Tailwind CSS + Framer Motion for styling and animations
-- Axios for API communication
-- State management with Zustand
-- Responsive design for mobile, tablet, desktop
+### Backend
 
-### Backend (Node.js + Express)
-- REST API on port 5000
-- MongoDB Atlas for data storage
-- OpenAI API for semantic search embeddings
-- JWT authentication for users
-- Socket.io for real-time updates
-- CORS enabled for LAN access
+- Node.js
+- Express 5
+- MongoDB with Mongoose
+- JWT authentication
+- Socket.IO
+- OpenAI API integration for semantic search features
 
-### Database (MongoDB)
-- **Question** collection - stores community questions
-- **Answer** collection - stores user and official answers
-- **User** collection - stores user profiles and reputation
-- Full-text and vector search indexes for semantic matching
+## Project Structure
 
-## Key Features Implemented
-- ✅ 130 seeded FAQ questions with official responses
-- ✅ Community Q&A feed with real-time updates
-- ✅ Semantic search using OpenAI embeddings
-- ✅ Admin dashboard to manage questions and create official answers
-- ✅ Official response badges for verified Vicharanashala System answers
-- ✅ User authentication with JWT tokens
-- ✅ Reputation scoring system
-- ✅ Pastel color theme with premium dark mode UI
-- ✅ LAN/Network accessibility for team development
+```text
+CrowdFAQ/
+  backend/      Express API, routes, models, services, seed script
+  frontend/     React app, Webpack config, UI source
+  database/     Database-related project files
+  docs/         Documentation
+  testing/      Testing support files
+```
 
 ## Prerequisites
-- Node.js 18+ 
+
+- Node.js 18 or newer
 - npm
-- MongoDB Atlas connection string
-- OpenAI API key, if you want embeddings/search features enabled
+- MongoDB running locally or a MongoDB Atlas connection string
+- OpenAI API key if you want AI search/embedding features
 
-## Local setup
+On Windows PowerShell, use `npm.cmd` if `npm` is blocked by the script execution policy.
 
-### 1) Clone the repo
-```bash
-git clone https://github.com/yogeshkamisetty/FAQ-VLED.git
-cd FAQ-VLED
+## Installation
+
+From the repository root:
+
+```powershell
+npm.cmd install
 ```
 
-### 2) Install dependencies
-From the repo root:
-```bash
-npm install
+You can also use plain `npm install` if your shell allows it.
+
+## Environment Setup
+
+Create `backend/.env` and add:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/CrowdFAQ
+JWT_SECRET=change-this-secret
+PORT=5000
+CLIENT_ORIGIN=http://localhost:3001
+NODE_ENV=development
+OPENAI_API_KEY=your-openai-api-key
 ```
 
-### 3) Configure backend environment
-Copy the example file and fill in real values locally:
-```bash
-cp backend/.env.example backend/.env
+Notes:
+
+- `OPENAI_API_KEY` is only required for OpenAI-backed features.
+- Use your MongoDB Atlas URI instead of the local MongoDB URI if you are not running MongoDB locally.
+- Do not commit `backend/.env`.
+
+## How To Run The Project
+
+Open two terminals.
+
+### Terminal 1: Start Backend
+
+From the repository root:
+
+```powershell
+npm.cmd run backend:dev
 ```
 
-Add your own values for:
-- `MONGODB_URI`
-- `OPENAI_API_KEY`
-- `JWT_SECRET`
+Or from the backend folder:
 
-Do not commit `backend/.env`.
-
-### 4) Start the backend
-```bash
-npm run backend:dev
+```powershell
+cd backend
+npm.cmd run dev
 ```
-Backend runs on `http://localhost:5000` by default.
 
-### 5) Start the frontend
-In a second terminal:
-```bash
-npm run frontend:dev
+Backend URL:
+
+```text
+http://localhost:5000
 ```
-Frontend runs on `http://localhost:3001` by default.
 
-## Team workflow
-- Create a new branch for each task.
-- Make changes locally.
-- Test the app before pushing.
-- Open a pull request to `main`.
+Health check:
 
-Suggested branch flow:
-```bash
+```text
+http://localhost:5000/api/v1/health
+```
+
+### Terminal 2: Start Frontend
+
+From the repository root:
+
+```powershell
+npm.cmd run frontend:dev
+```
+
+Or from the frontend folder:
+
+```powershell
+cd frontend
+npm.cmd run dev
+```
+
+Frontend URL:
+
+```text
+http://localhost:3001
+```
+
+## Available Scripts
+
+### Root Scripts
+
+```powershell
+npm.cmd run frontend:dev   # Start the React dev server
+npm.cmd run backend:dev    # Start the Express API in watch mode
+npm.cmd run backend:start  # Start the Express API normally
+npm.cmd run build          # Build the frontend for production
+npm.cmd test               # Run tests across workspaces
+```
+
+### Backend Scripts
+
+```powershell
+npm.cmd run dev    # Start backend with node --watch
+npm.cmd start      # Start backend normally
+npm.cmd test       # Run backend tests
+```
+
+### Frontend Scripts
+
+```powershell
+npm.cmd run dev    # Start Webpack Dev Server
+npm.cmd start      # Same as dev
+npm.cmd run build  # Build production frontend assets
+npm.cmd test       # Run frontend tests
+```
+
+## Common Issues
+
+### `Missing script: "dev"` in frontend
+
+Make sure you have the latest `frontend/package.json`. The frontend now includes:
+
+```json
+"dev": "webpack serve --mode development"
+```
+
+### `'webpack' is not recognized`
+
+Install dependencies from the repository root:
+
+```powershell
+npm.cmd install
+```
+
+Then run the frontend again.
+
+### `Cannot find module ...`
+
+This usually means `node_modules` is incomplete or corrupted. Run:
+
+```powershell
+npm.cmd install
+```
+
+If OneDrive interrupted package extraction, reinstalling from the root usually repairs the missing package files.
+
+### Backend port already in use
+
+The backend uses port `5000` by default. Stop the old backend terminal with `Ctrl+C`, or change `PORT` in `backend/.env`.
+
+### MongoDB connection failed
+
+Start local MongoDB, or update `MONGODB_URI` in `backend/.env` with a valid MongoDB Atlas connection string.
+
+## Build
+
+To create a production frontend build:
+
+```powershell
+npm.cmd run build
+```
+
+The build output is written to:
+
+```text
+frontend/dist
+```
+
+## Team Workflow
+
+```powershell
 git checkout -b feature/my-update
-```
-Then:
-```bash
 git add .
 git commit -m "Describe the change"
 git push origin feature/my-update
 ```
 
+Then open a pull request to `main`.
+
 ## Notes
-- `backend/.env` is ignored by Git.
-- `backend/.env.example` is safe to share.
-- If a secret was ever pushed by mistake, rotate it immediately.
+
+- Keep secrets in `backend/.env`.
+- Do not commit `node_modules`.
+- Run `npm.cmd install` from the repository root so both workspaces are installed correctly.

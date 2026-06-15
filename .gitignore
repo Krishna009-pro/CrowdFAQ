@@ -1,0 +1,42 @@
+# --- Node.js & Dependency Folders ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- React / Client-side Build ---
+# If your frontend is in a 'client' folder, you can also add 'client/dist/'
+dist/
+build/
+coverage/
+
+# --- Environment Variables (CRITICAL) ---
+# Never commit your database connection strings or API keys
+.env
+.env.local
+.env.*.local
+
+# --- IDEs / Editor Configs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- System Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs ---
+*.log
+npm-debug.log*
+
+# --- Databases / Temp ---
+# If you are running a local MongoDB instance and storing data in the repo
+data/
+db/
+*.sqlite
+*.sqlite-journal

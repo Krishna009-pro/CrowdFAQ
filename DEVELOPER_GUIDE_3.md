@@ -4,7 +4,7 @@
 
 ### Run the Project
 ```bash
-cd /c/Users/kkp18/Downloads/FAQ-VLED-main
+cd /c/Users/kkp18/Downloads/CrowdFAQ-main
 
 # Terminal 1: Backend
 npm run backend:dev
@@ -348,7 +348,7 @@ curl -X POST http://localhost:5000/api/v1/questions \
 ### Database Checks
 ```bash
 # Connect to MongoDB
-mongo localhost:27017/faq-vled
+mongo localhost:27017/CrowdFAQ
 
 # List users
 db.users.find()

@@ -61,7 +61,7 @@ const faqData = [
 
 async function seedDatabase() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/faq-vled");
+    await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/CrowdFAQ");
     console.log("Connected to MongoDB");
 
     // Clear existing data
@@ -73,7 +73,7 @@ async function seedDatabase() {
     // Create admin user
     const adminUser = await User.create({
       displayName: "System Admin",
-      email: "admin@faq-vled.local",
+      email: "admin@CrowdFAQ.local",
       role: "admin",
       reputationScore: 1000,
       badges: ["verified", "founder"]

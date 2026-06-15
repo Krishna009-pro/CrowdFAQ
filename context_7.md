@@ -403,7 +403,7 @@ Current handling:
 - If needed later, run:
 
 ```powershell
-git config --global --add safe.directory C:/Users/kamis/OneDrive/Documents/FAQ-VLED
+git config --global --add safe.directory C:/Users/kamis/OneDrive/Documents/CrowdFAQ
 ```
 
 ### NPM Network Cache

@@ -1,7 +1,7 @@
 # 📋 Complete Project Analysis - Document Index
 
 **Analysis Date:** 2026-06-12  
-**Project:** FAQ-VLED Q&A Portal  
+**Project:** CrowdFAQ Q&A Portal  
 **Status:** 40% Complete - Foundation Ready, Critical Features Incomplete
 
 ---
@@ -378,7 +378,7 @@
 
 ### In This Directory
 ```
-FAQ-VLED-main/
+CrowdFAQ-main/
 ├── EXECUTIVE_SUMMARY.md          ← Start here
 ├── DETAILED_ANALYSIS_REPORT.md   ← Technical deep dive
 ├── ACTION_ITEMS.md               ← Implementation plan

@@ -1,4 +1,4 @@
-# FAQ-VLED Functionality Report
+# CrowdFAQ Functionality Report
 
 **Date:** 2026-06-12  
 **Status:** Partially Working with Critical Issues
