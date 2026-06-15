@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Mail, Sparkles, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Mail,
+  Sparkles,
+  User,
+} from "lucide-react";
 
 import apiClient from "../api/client";
 import useStore from "../store/useStore";
@@ -8,18 +17,36 @@ import useStore from "../store/useStore";
 const Login = () => {
   const navigate = useNavigate();
   const setUser = useStore((state) => state.setUser);
+
+  // Toggle between "login" and "register" modes
+  const [mode, setMode] = useState("login");
+
   const [formData, setFormData] = useState({
     displayName: "",
     email: "",
+    password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isRegister = mode === "register";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!formData.displayName.trim() || !formData.email.trim()) {
-      setError("Display name and email are required.");
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    if (isRegister && !formData.displayName.trim()) {
+      setError("Display name is required for registration.");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -27,17 +54,35 @@ const Login = () => {
       setIsLoading(true);
       setError("");
 
-      const response = await apiClient.post("auth/register", formData);
+      let response;
+      if (isRegister) {
+        response = await apiClient.post("auth/register", {
+          displayName: formData.displayName,
+          email: formData.email,
+          password: formData.password,
+        });
+      } else {
+        response = await apiClient.post("auth/login", {
+          email: formData.email,
+          password: formData.password,
+        });
+      }
+
       setUser(response.data.data.user);
       navigate("/");
     } catch (requestError) {
       setError(
         requestError.response?.data?.error?.message ||
-          "Could not enter the portal."
+          "Could not complete the request. Please try again."
       );
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const switchMode = () => {
+    setMode(isRegister ? "login" : "register");
+    setError("");
   };
 
   return (
@@ -60,38 +105,46 @@ const Login = () => {
           </div>
 
           <div className="text-center">
-            <h1 className="text-3xl font-semibold text-[#102431]">Enter AQ Portal</h1>
+            <h1 className="text-3xl font-semibold text-[#102431]">
+              {isRegister ? "Create Account" : "Welcome Back"}
+            </h1>
             <p className="mt-2 text-sm leading-6 text-[#51616a]">
-              Create a lightweight session for posting questions and answers.
+              {isRegister
+                ? "Join the community — ask questions and help others."
+                : "Sign in to your account to continue."}
             </p>
           </div>
 
           <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label
-                className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#31444f]"
-                htmlFor="displayName"
-              >
-                Display name
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#2f779f]" />
-                <input
-                  id="displayName"
-                  type="text"
-                  value={formData.displayName}
-                  onChange={(event) =>
-                    setFormData({
-                      ...formData,
-                      displayName: event.target.value,
-                    })
-                  }
-                  placeholder="Jane Cooper"
-                  className="min-h-12 w-full rounded-xl border border-[#C1DCEB] bg-white/75 pl-12 pr-4 text-[#102431] outline-none transition placeholder:text-[#7a8b91] focus:border-[#84BBE1]"
-                />
+            {/* Display Name — only shown in register mode */}
+            {isRegister && (
+              <div>
+                <label
+                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#31444f]"
+                  htmlFor="displayName"
+                >
+                  Display name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#2f779f]" />
+                  <input
+                    id="displayName"
+                    type="text"
+                    value={formData.displayName}
+                    onChange={(event) =>
+                      setFormData({
+                        ...formData,
+                        displayName: event.target.value,
+                      })
+                    }
+                    placeholder="Jane Cooper"
+                    className="min-h-12 w-full rounded-xl border border-[#C1DCEB] bg-white/75 pl-12 pr-4 text-[#102431] outline-none transition placeholder:text-[#7a8b91] focus:border-[#84BBE1]"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
+            {/* Email */}
             <div>
               <label
                 className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#31444f]"
@@ -117,6 +170,61 @@ const Login = () => {
               </div>
             </div>
 
+            {/* Password */}
+            <div>
+              <label
+                className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#31444f]"
+                htmlFor="password"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <KeyRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#2f779f]" />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(event) =>
+                    setFormData({
+                      ...formData,
+                      password: event.target.value,
+                    })
+                  }
+                  placeholder="••••••••"
+                  className="min-h-12 w-full rounded-xl border border-[#C1DCEB] bg-white/75 pl-12 pr-10 text-[#102431] outline-none transition placeholder:text-[#7a8b91] focus:border-[#84BBE1]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7a8b91] transition hover:text-[#2f779f]"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Forgot Password link — only in login mode */}
+            {!isRegister && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-[#2f779f] transition hover:text-[#1a5f87]"
+                  onClick={() =>
+                    setError(
+                      "Forgot password flow: Contact your admin or use the API endpoint POST /api/v1/auth/forgot-password"
+                    )
+                  }
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             {error && (
               <p className="rounded-lg border border-red-400/30 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {error}
@@ -132,11 +240,26 @@ const Login = () => {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Enter the Portal <Sparkles className="h-4 w-4" />
+                  {isRegister ? "Create Account" : "Sign In"}{" "}
+                  <Sparkles className="h-4 w-4" />
                 </>
               )}
             </button>
           </form>
+
+          {/* Toggle between Login and Register */}
+          <p className="mt-5 text-center text-sm text-[#51616a]">
+            {isRegister
+              ? "Already have an account? "
+              : "Don't have an account? "}
+            <button
+              type="button"
+              onClick={switchMode}
+              className="font-semibold text-[#2f779f] transition hover:text-[#1a5f87]"
+            >
+              {isRegister ? "Sign In" : "Create Account"}
+            </button>
+          </p>
         </div>
       </div>
     </section>

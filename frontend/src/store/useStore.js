@@ -3,11 +3,16 @@ import { create } from "zustand";
 const useStore = create((set) => ({
   user: null,
   isAuthenticated: false,
+  authLoading: true,
   notifications: [],
   setUser: (user) =>
     set({
       user,
       isAuthenticated: Boolean(user),
+    }),
+  setAuthLoading: (loading) =>
+    set({
+      authLoading: loading,
     }),
   logout: () =>
     set({

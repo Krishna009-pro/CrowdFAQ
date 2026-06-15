@@ -197,6 +197,7 @@ const createOfficialAnswer = async (req, res, next) => {
       vicharanashalUser = await User.create({
         email: "system@vicharanashala.com",
         displayName: "Vicharanashala System",
+        password: "System@123456",
         role: "admin",
       });
     }
