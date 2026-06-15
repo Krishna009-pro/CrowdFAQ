@@ -1,185 +1,404 @@
-# Database Blueprint (MongoDB & Mongoose)
+# CrowdFAQ Database Guide
 
-This document details the database modeling, document schema definitions, collection relationships, index structures, and vector search settings for the **MongoDB** database in CrowdFAQ.
+This document describes the current MongoDB and Mongoose database design used by the CrowdFAQ backend.
 
----
+The actual source of truth for schema details is:
 
-## 1. Database Engine & Modeling
-* **Database**: MongoDB (v5.0+ or MongoDB Atlas)
-* **ODM (Object Document Mapper)**: Mongoose (v6.0+)
-* **Index Method**: B-tree (standard indexes) and HNSW (MongoDB Atlas Vector Search)
+```text
+backend/models/User.js
+backend/models/Question.js
+backend/models/Answer.js
+backend/services/openaiService.js
+backend/seed.js
+```
 
----
+## Database Stack
 
-## 2. Collection Relationship Diagram
+- Database: MongoDB or MongoDB Atlas
+- ODM: Mongoose
+- Backend: Node.js + Express
+- AI search: OpenAI embeddings with MongoDB Atlas Vector Search
 
-Since MongoDB is a document-oriented database, we optimize performance by embedding highly relational subdocuments (like comments, votes, and followers) instead of creating separate tables.
+## Current Collections
+
+The current backend uses three main collections:
+
+```text
+users
+questions
+answers
+```
+
+Current relationship:
 
 ```mermaid
 erDiagram
-    USERS ||--o{ QUESTIONS : "posts"
+    USERS ||--o{ QUESTIONS : "asks"
     USERS ||--o{ ANSWERS : "writes"
-    USERS ||--o{ NOTIFICATIONS : "receives"
-    USERS }|--|| ROLES : "has"
-    
-    QUESTIONS ||--o{ ANSWERS : "contains"
-    QUESTIONS }|--|| CATEGORIES : "belongs_to"
-    QUESTIONS }|--o{ TAGS : "tagged_with"
-    
-    REPORTS }|--|| USERS : "reported_by"
-    
-    AI_RECOMMENDATIONS }|--|| QUESTIONS : "analyzes"
+    QUESTIONS ||--o{ ANSWERS : "has"
+    QUESTIONS ||--o| ANSWERS : "accepted_answer"
+    QUESTIONS ||--o| QUESTIONS : "duplicate_of"
 ```
 
----
+## User Model
 
-## 3. Schema Definitions (Mongoose Models)
+Collection:
 
-### 3.1 `Role` (Collection: `roles`)
-* `_id` (ObjectId)
-* `name` (String, Unique, Required) - 'Admin', 'Moderator', 'Expert', 'User'
-* `description` (String)
+```text
+users
+```
 
-### 3.2 `User` (Collection: `users`)
-* `_id` (ObjectId)
-* `role` (ObjectId referencing `Role`, Required)
-* `name` (String, Required)
-* `email` (String, Unique, Required, Index: true)
-* `passwordHash` (String, Required)
-* `profilePictureUrl` (String)
-* `reputation` (Number, Default: 0)
-* `isVerified` (Boolean, Default: false)
-* `badges` [Array of Subdocuments]:
-  * `badgeId` (ObjectId referencing `Badge`)
-  * `awardedAt` (Date, Default: Date.now)
-* `createdAt` (Date, Default: Date.now)
-* `updatedAt` (Date, Default: Date.now)
+Current fields:
 
-### 3.3 `Category` (Collection: `categories`)
-* `_id` (ObjectId)
-* `name` (String, Unique, Required)
-* `slug` (String, Unique, Required, Index: true)
-* `description` (String)
-* `createdAt` (Date, Default: Date.now)
+| Field | Type | Notes |
+|---|---|---|
+| `displayName` | String | Required, 2-80 chars |
+| `email` | String | Required, unique, indexed |
+| `passwordHash` | String | Required, excluded from query results by default |
+| `role` | String | `student`, `moderator`, or `admin` |
+| `reputationScore` | Number | Defaults to `0` |
+| `badges` | String array | Defaults to `[]` |
+| `streak` | Number | Defaults to `0` |
+| `createdAt` | Date | Added by timestamps |
+| `updatedAt` | Date | Added by timestamps |
 
-### 3.4 `Tag` (Collection: `tags`)
-* `_id` (ObjectId)
-* `name` (String, Unique, Required)
-* `slug` (String, Unique, Required, Index: true)
+Current role values:
 
-### 3.5 `Question` (Collection: `questions`)
-* `_id` (ObjectId)
-* `author` (ObjectId referencing `User`, Required, Index: true)
-* `category` (ObjectId referencing `Category`, Required, Index: true)
-* `title` (String, Required)
-* `slug` (String, Unique, Required, Index: true)
-* `description` (String, Required)
-* `viewsCount` (Number, Default: 0)
-* `status` (String, Default: 'open') - 'open', 'resolved', 'locked', 'closed'
-* `embedding` (Array of Numbers, Length: 384, Required for Vector Search)
-* `tags` [Array of ObjectIds referencing `Tag`]
-* `followers` [Array of ObjectIds referencing `User`]
-* `votes` [Array of Subdocuments]:
-  * `user` (ObjectId referencing `User`)
-  * `voteType` (String: 'upvote' | 'downvote')
-  * `createdAt` (Date, Default: Date.now)
-* `createdAt` (Date, Default: Date.now)
-* `updatedAt` (Date, Default: Date.now)
+```text
+student
+moderator
+admin
+```
 
-### 3.6 `Answer` (Collection: `answers`)
-* `_id` (ObjectId)
-* `question` (ObjectId referencing `Question`, Required, Index: true)
-* `author` (ObjectId referencing `User`, Required, Index: true)
-* `content` (String, Required)
-* `isBest` (Boolean, Default: false)
-* `isVerified` (Boolean, Default: false)
-* `verifiedBy` (ObjectId referencing `User`, Nullable)
-* `verificationNotes` (String)
-* `verifiedAt` (Date)
-* `votes` [Array of Subdocuments]:
-  * `user` (ObjectId referencing `User`)
-  * `voteType` (String: 'upvote' | 'downvote')
-  * `createdAt` (Date, Default: Date.now)
-* `comments` [Array of Subdocuments]:
-  * `_id` (ObjectId)
-  * `author` (ObjectId referencing `User`, Required)
-  * `content` (String, Required)
-  * `createdAt` (Date, Default: Date.now)
-* `createdAt` (Date, Default: Date.now)
-* `updatedAt` (Date, Default: Date.now)
+Note: The current auth flow is still a simple development registration flow. Password values are stored as hashes with a lightweight built-in `scrypt` helper, but a future production version should add full login verification, email verification, password reset, and stronger session management.
 
-### 3.7 `Report` (Collection: `reports`)
-* `_id` (ObjectId)
-* `reporter` (ObjectId referencing `User`, Required)
-* `reportedType` (String, Required) - 'question' | 'answer' | 'comment'
-* `targetId` (ObjectId, Required) - Refers to the reported document id
-* `reason` (String, Required) - 'spam' | 'offensive' | 'wrong_info'
-* `details` (String)
-* `status` (String, Default: 'pending') - 'pending' | 'reviewed' | 'dismissed' | 'actioned'
-* `createdAt` (Date, Default: Date.now)
-* `resolvedAt` (Date)
+## Question Model
 
-### 3.8 `Badge` (Collection: `badges`)
-* `_id` (ObjectId)
-* `name` (String, Unique, Required)
-* `description` (String, Required)
-* `iconUrl` (String, Required)
+Collection:
 
-### 3.9 `Notification` (Collection: `notifications`)
-* `_id` (ObjectId)
-* `user` (ObjectId referencing `User`, Required, Index: true)
-* `title` (String, Required)
-* `content` (String, Required)
-* `type` (String, Required) - 'new_answer' | 'upvote' | 'verified' | 'badge_earned'
-* `isRead` (Boolean, Default: false)
-* `referenceUrl` (String)
-* `createdAt` (Date, Default: Date.now)
+```text
+questions
+```
 
-### 3.10 `AiRecommendation` (Collection: `ai_recommendations`)
-* `_id` (ObjectId)
-* `question` (ObjectId referencing `Question`, Required)
-* `suggestedCategory` (ObjectId referencing `Category`)
-* `suggestedTags` (Array of Strings)
-* `duplicateQuestion` (ObjectId referencing `Question`)
-* `confidenceScore` (Number)
-* `createdAt` (Date, Default: Date.now)
+Current fields:
 
----
+| Field | Type | Notes |
+|---|---|---|
+| `title` | String | Required, 8-180 chars |
+| `body` | String | Required, 10-5000 chars |
+| `author` | ObjectId | References `User`, required, indexed |
+| `tags` | String array | Indexed |
+| `embedding` | Number array | Optional, expected length `1536` when present |
+| `duplicateOf` | ObjectId | References another `Question`, optional |
+| `acceptedAnswerId` | ObjectId | References `Answer`, optional |
+| `upvoteCount` | Number | Defaults to `0` |
+| `downvoteCount` | Number | Defaults to `0` |
+| `duplicateScore` | Number | Optional value from `0` to `1` |
+| `status` | String | Indexed |
+| `createdAt` | Date | Added by timestamps |
+| `updatedAt` | Date | Added by timestamps |
 
-## 4. MongoDB Atlas Vector Search Index Configuration
+Current question status values:
 
-To enable semantic search on the `questions` collection embedding path:
+```text
+pending
+answered
+verified
+resolved
+duplicate
+closed
+```
 
-1. Create a Vector Search Index on **MongoDB Atlas** named `vector_index`.
-2. Configure it with the following JSON configuration:
+Current indexes:
+
+```js
+questionSchema.index({ createdAt: -1, _id: -1 });
+```
+
+Important built-in indexes from schema fields:
+
+```text
+author
+tags
+duplicateOf
+acceptedAnswerId
+status
+```
+
+Virtual relationship:
+
+```text
+Question.answers -> Answer documents where Answer.question equals Question._id
+```
+
+## Answer Model
+
+Collection:
+
+```text
+answers
+```
+
+Current fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `question` | ObjectId | References `Question`, required, indexed |
+| `author` | ObjectId | References `User`, optional, indexed |
+| `body` | String | Required, 2-5000 chars |
+| `aiGenerated` | Boolean | Defaults to `false`, indexed |
+| `isAccepted` | Boolean | Defaults to `false`, indexed |
+| `isOfficial` | Boolean | Defaults to `false`, indexed |
+| `upvoteCount` | Number | Defaults to `0` |
+| `downvoteCount` | Number | Defaults to `0` |
+| `createdAt` | Date | Added by timestamps |
+| `updatedAt` | Date | Added by timestamps |
+
+Virtual field:
+
+```text
+netVoteScore = upvoteCount - downvoteCount
+```
+
+Current index:
+
+```js
+answerSchema.index({ question: 1, createdAt: 1 });
+```
+
+## Search And Embeddings
+
+The backend uses OpenAI embeddings for semantic search.
+
+Current embedding model:
+
+```text
+text-embedding-3-small
+```
+
+Current expected embedding dimensions:
+
+```text
+1536
+```
+
+The backend stores the embedding on each question:
+
+```text
+Question.embedding
+```
+
+When OpenAI is unavailable or no API key is configured, the current search controller falls back to text search behavior where possible.
+
+## MongoDB Atlas Vector Search
+
+If using MongoDB Atlas Vector Search, create a vector index on the `questions` collection.
+
+Recommended index name:
+
+```text
+vector_index
+```
+
+Recommended configuration for the current backend:
 
 ```json
 {
-  "mappings": {
-    "dynamic": true,
-    "fields": {
-      "embedding": {
-        "dimensions": 384,
-        "similarity": "cosine",
-        "type": "knnVector"
-      }
+  "fields": [
+    {
+      "type": "vector",
+      "path": "embedding",
+      "numDimensions": 1536,
+      "similarity": "cosine"
     }
+  ]
+}
+```
+
+The search controller currently queries:
+
+```js
+{
+  $vectorSearch: {
+    index: "vector_index",
+    path: "embedding",
+    queryVector: embedding,
+    numCandidates: 100,
+    limit: 5
   }
 }
 ```
 
----
+## Seed Script
 
-## 5. Seed Script Guide
+The current seed script is:
 
-To initialize database roles, default categories, and rewards:
-
-Create a seed script at `database/seed.js` using Mongoose:
-```javascript
-const mongoose = require('mongoose');
-// Connect models and run insertMany commands
+```text
+backend/seed.js
 ```
-Execute using Node:
-```bash
-node database/seed.js
+
+There is currently no `seed` script in `backend/package.json`, so run it directly:
+
+```powershell
+cd backend
+node seed.js
 ```
+
+## Current API Areas Using The Database
+
+Authentication and users:
+
+```text
+POST /api/v1/auth/register
+POST /api/v1/auth/logout
+```
+
+Questions:
+
+```text
+GET  /api/v1/questions
+POST /api/v1/questions
+GET  /api/v1/questions/:id
+```
+
+Answers:
+
+```text
+POST  /api/v1/answers
+PATCH /api/v1/answers/:id/accept
+POST  /api/v1/answers/:id/vote
+POST  /api/v1/answers/official/create
+```
+
+Search:
+
+```text
+GET /api/v1/search?q=...
+```
+
+## Recommended Next Database Improvements
+
+These are not fully implemented yet, but they are good next steps.
+
+### Improve Authentication Fields
+
+For production auth, improve:
+
+```text
+emailVerified
+lastLoginAt
+```
+
+### Improve Official Answer Metadata
+
+Current official answers use `Answer.isOfficial`. For richer admin history, add:
+
+```text
+Answer.officialSource
+Answer.verifiedBy
+Answer.verifiedAt
+```
+
+### Add Separate Vote Tracking
+
+Current voting uses counters only. To prevent duplicate votes, add a separate vote collection:
+
+```text
+votes
+```
+
+Suggested fields:
+
+```text
+user
+targetType
+targetId
+voteType
+createdAt
+updatedAt
+```
+
+### Add Categories
+
+Current tags are strings. Categories can be added later:
+
+```text
+categories
+```
+
+Suggested fields:
+
+```text
+name
+slug
+description
+createdAt
+updatedAt
+```
+
+### Add Notifications
+
+Useful for real-time and user engagement:
+
+```text
+notifications
+```
+
+Suggested fields:
+
+```text
+user
+title
+body
+type
+isRead
+referenceType
+referenceId
+createdAt
+```
+
+### Add Reports And Moderation
+
+Useful for admin workflows:
+
+```text
+reports
+```
+
+Suggested fields:
+
+```text
+reporter
+targetType
+targetId
+reason
+details
+status
+resolvedBy
+resolvedAt
+createdAt
+```
+
+## Team Guidance
+
+For team development, use these files as ownership boundaries:
+
+```text
+Auth/User member:
+  backend/models/User.js
+
+Questions member:
+  backend/models/Question.js
+
+Answers member:
+  backend/models/Answer.js
+
+Search/AI member:
+  backend/services/openaiService.js
+  Question.embedding
+
+Admin/QA member:
+  seed data, indexes, docs, moderation-related future models
+```
+
+Avoid creating separate MongoDB connections in feature files. The backend should share one database connection through server startup/config.
