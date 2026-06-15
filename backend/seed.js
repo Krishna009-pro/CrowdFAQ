@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
 
+const env = require("./config/env");
 const User = require("./models/User");
 const Question = require("./models/Question");
 const Answer = require("./models/Answer");
+const { createPasswordHash } = require("./utils/password");
 
 const faqData = [
   {
@@ -61,7 +61,7 @@ const faqData = [
 
 async function seedDatabase() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/CrowdFAQ");
+    await mongoose.connect(env.mongodbUri || "mongodb://localhost:27017/CrowdFAQ");
     console.log("Connected to MongoDB");
 
     // Clear existing data
@@ -74,6 +74,7 @@ async function seedDatabase() {
     const adminUser = await User.create({
       displayName: "System Admin",
       email: "admin@CrowdFAQ.local",
+      passwordHash: createPasswordHash("seed-admin-no-login"),
       role: "admin",
       reputationScore: 1000,
       badges: ["verified", "founder"]
@@ -97,6 +98,7 @@ async function seedDatabase() {
         body: faq.answer,
         aiGenerated: false,
         isAccepted: true,
+        isOfficial: true,
         upvoteCount: 5
       });
 
