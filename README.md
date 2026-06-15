@@ -1,129 +1,128 @@
-# CrowdFAQ - AI-Powered Community FAQ & Knowledge Sharing Platform (MERN Stack)
+# FAQ-VLED
 
-CrowdFAQ is a modern, community-driven knowledge-sharing platform where users ask questions, contribute answers, search existing discussions, and receive AI-assisted support. The platform is designed to eliminate repetitive questions, preserve tribal knowledge, and provide verified, searchable, and reliable information for colleges, internship guidance, company knowledge bases, customer support communities, and technical discussion forums.
+FAQ and community Q&A portal with separate frontend and backend workspaces.
 
----
+## Problem Statement & Solution
 
-## 1. High-Level MERN System Architecture
+### What Problem Does This Solve?
+- **Support fatigue**: Repetitive questions take time to answer manually
+- **Knowledge fragmentation**: FAQs scattered across docs; no single source of truth
+- **Poor discoverability**: Users can't find answers to common questions
+- **No community involvement**: Users can't help each other or contribute knowledge
 
-CrowdFAQ utilizes a decoupled multi-tier architecture designed for scalability, low latency, and modular development using the MERN stack.
+### How It Solves It
+1. **Unified Knowledge Base** - All FAQs and community Q&A in one searchable portal
+2. **Smart Search** - AI-powered semantic search using OpenAI embeddings to find similar questions
+3. **Community Contributions** - Users can ask questions and community/admins can provide official answers
+4. **Official Responses** - Admins can mark answers as "Official" from Vicharanashala System
+5. **Verified Badges** - Official answers stand out with verified badges
+6. **User Reputation** - Gamification with reputation scores and badges for active contributors
 
-```mermaid
-graph TD
-    subgraph Frontend [Client Layer - React/Vite]
-        UI[Tailwind UI / Dashboard]
-        RC[React Context / State]
-        API_Client[Axios Client]
-    end
+### Methodology
+- **Agile Development** - Iterative updates with feature releases in phases
+- **Monorepo Structure** - Frontend and backend in one repo for easier coordination
+- **Separation of Concerns** - Clean API boundaries between frontend/backend
+- **Environment Management** - Secrets in .env files, never committed to Git
+- **Team Collaboration** - Feature branches, pull requests, code review workflow
 
-    subgraph Backend [Application Layer - Node.js & Express]
-        Gateway[Express Router & Middlewares]
-        Auth[Auth Controller JWT/RBAC]
-        FAQ_Svc[FAQ & Question Controllers]
-        Game_Svc[Gamification & Reputation Engine]
-        AI_Svc[AI Orchestration Svc]
-    end
+## Architecture
 
-    subgraph Database [Storage & Search Layer]
-        MongoDB[(MongoDB Database)]
-        AtlasSearch[(MongoDB Atlas Vector Search)]
-    end
+### Frontend (React 18 + Webpack)
+- SPA built with React Router for navigation
+- Tailwind CSS + Framer Motion for styling and animations
+- Axios for API communication
+- State management with Zustand
+- Responsive design for mobile, tablet, desktop
 
-    subgraph External [AI & LLM Services]
-        Gemini[Gemini API - google/generative-ai]
-    end
+### Backend (Node.js + Express)
+- REST API on port 5000
+- MongoDB Atlas for data storage
+- OpenAI API for semantic search embeddings
+- JWT authentication for users
+- Socket.io for real-time updates
+- CORS enabled for LAN access
 
-    UI --> RC
-    RC --> API_Client
-    API_Client --> Gateway
-    Gateway --> Auth
-    Gateway --> FAQ_Svc
-    Gateway --> Game_Svc
-    Gateway --> AI_Svc
+### Database (MongoDB)
+- **Question** collection - stores community questions
+- **Answer** collection - stores user and official answers
+- **User** collection - stores user profiles and reputation
+- Full-text and vector search indexes for semantic matching
 
-    Auth --> MongoDB
-    FAQ_Svc --> MongoDB
-    Game_Svc --> MongoDB
-    
-    AI_Svc --> AtlasSearch
-    AI_Svc --> Gemini
-    AtlasSearch --- MongoDB
+## Key Features Implemented
+- ✅ 130 seeded FAQ questions with official responses
+- ✅ Community Q&A feed with real-time updates
+- ✅ Semantic search using OpenAI embeddings
+- ✅ Admin dashboard to manage questions and create official answers
+- ✅ Official response badges for verified Vicharanashala System answers
+- ✅ User authentication with JWT tokens
+- ✅ Reputation scoring system
+- ✅ Pastel color theme with premium dark mode UI
+- ✅ LAN/Network accessibility for team development
+
+## Prerequisites
+- Node.js 18+ 
+- npm
+- MongoDB Atlas connection string
+- OpenAI API key, if you want embeddings/search features enabled
+
+## Local setup
+
+### 1) Clone the repo
+```bash
+git clone https://github.com/yogeshkamisetty/FAQ-VLED.git
+cd FAQ-VLED
 ```
 
----
-
-## 2. Platform Specifications & Core Modules
-
-### 2.1 User Roles & Access Control (RBAC)
-
-| Role | Permissions | Badge |
-| :--- | :--- | :--- |
-| **Normal User** | Register, login, ask/answer questions, edit own content, vote, comment, follow questions, view profile. | None (Reputation-based) |
-| **Expert** | Normal User permissions + verify answers, mark recommended answers, moderate content. | Blue Badge (Expert) / Red Badge (Faculty) |
-| **Moderator** | Expert permissions + remove spam, merge duplicate questions, review flags/reports, suspend content. | Blue Badge |
-| **Admin** | Full system permissions, manage users/roles, manage categories, handle reports, access analytics, configure AI parameters. | Gold Badge |
-
-### 2.2 Core Modules (MVP)
-1. **Authentication & Authorization**: JWT token-based authentication, password hashing with bcryptjs, role-based route middleware, password recovery, email verification.
-2. **User Profiles**: Display user reputation, earned badges, question/answer history, and activity statistics.
-3. **Question Management**: Rich Markdown editor, categories, tags, attachment support (PNG, JPG, PDF), questions following, and editing history.
-4. **Answer Management**: Rich answers support, nested replies (comments), and author-selected or expert-verified "Best Answer" flagging.
-5. **Voting & Reputation Engine**: Upvoting/downvoting on questions/answers with real-time reputation changes (see Gamification).
-6. **Search**: Keyword, tag, and category filters combined with AI Semantic Search.
-7. **Report & Moderation System**: Report flag triggers (spam, offensive, wrong info) routed to Moderator dashboard.
-
-### 2.3 Advanced AI Features
-* **AI Duplicate Question Detection**: As users type, the system runs semantic vector queries in MongoDB Atlas. If similarity matches above a threshold (e.g., 0.85), a modal recommends reading the existing thread.
-* **AI Semantic Search**: Utilizes dense vector embeddings to search questions based on intent rather than pure keyword matching using MongoDB Atlas Vector Search.
-* **AI Answer Summarization**: Leverages the Gemini API (Node SDK) to compile summaries of threads with multiple answers.
-* **AI Chat Assistant**: An in-app assistant that answers user queries instantly using FAQ databases and vectorized community knowledge.
-* **AI Suggested Tags**: Automatically parses titles/descriptions using LLM prompts to suggest matching tags and categories before posting.
-* **AI Related Questions**: "People also asked" recommendations shown on every question detail view.
-
-### 2.4 Gamification System
-To drive high-quality contributions, the platform employs a gamified progression model:
-
-* **Reputation Milestones**:
-  * Ask a Question: `+5` points
-  * Answer a Question: `+10` points
-  * Receive an Upvote: `+2` points
-  * Answer Marked Verified: `+20` points
-  * Answer Selected as Best Answer: `+25` points
-* **Badges**:
-  * *Beginner Contributor*: Awarded on first approved post.
-  * *Top Contributor*: Awarded for maintaining a weekly upvote streak.
-  * *Expert Helper*: Awarded when 5 answers are verified.
-  * *100 Answers Club*: Awarded when user crosses 100 answers posted.
-  * *Community Leader*: Awarded to top-tier reputation holders.
-
----
-
-## 3. Technology Stack
-
-* **Frontend**: React (Vite), Tailwind CSS, React Router, Lucide Icons, Axios.
-* **Backend**: Node.js, Express.js.
-* **Database**: MongoDB (Mongoose ODM) with MongoDB Atlas Vector Search.
-* **AI & LLM**: Gemini API via `@google/generative-ai` Node.js SDK.
-
----
-
-## 4. Folder Structure & Subdirectories
-
-```
-CrowdFAQ/
-├── ai/            # AI configurations, prompt managers, and text embedding functions
-├── backend/       # Express Backend (controllers, models, middleware, router)
-├── database/      # Database helper connection scripts, schemas, and seeding scripts
-├── docs/          # API specifications, development guides, deployment setup
-├── frontend/      # React client codebase (pages, components, assets)
-└── testing/       # Automated test suites (Jest, Supertest, Vitest)
+### 2) Install dependencies
+From the repo root:
+```bash
+npm install
 ```
 
-For detailed setup and implementation steps for each folder, please refer to the respective sub-README files:
-* [Database Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/database/README.md)
-* [Backend Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/backend/README.md)
-* [AI Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/ai/README.md)
-* [Frontend Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/frontend/README.md)
-* [Testing Blueprint](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/testing/README.md)
-* [Docs & Guides](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/docs/README.md)
-* [Team Collaboration & Data Flow Guide](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/docs/team_collaboration_and_data_flow.md)
+### 3) Configure backend environment
+Copy the example file and fill in real values locally:
+```bash
+cp backend/.env.example backend/.env
+```
+
+Add your own values for:
+- `MONGODB_URI`
+- `OPENAI_API_KEY`
+- `JWT_SECRET`
+
+Do not commit `backend/.env`.
+
+### 4) Start the backend
+```bash
+npm run backend:dev
+```
+Backend runs on `http://localhost:5000` by default.
+
+### 5) Start the frontend
+In a second terminal:
+```bash
+npm run frontend:dev
+```
+Frontend runs on `http://localhost:3001` by default.
+
+## Team workflow
+- Create a new branch for each task.
+- Make changes locally.
+- Test the app before pushing.
+- Open a pull request to `main`.
+
+Suggested branch flow:
+```bash
+git checkout -b feature/my-update
+```
+Then:
+```bash
+git add .
+git commit -m "Describe the change"
+git push origin feature/my-update
+```
+
+## Notes
+- `backend/.env` is ignored by Git.
+- `backend/.env.example` is safe to share.
+- If a secret was ever pushed by mistake, rotate it immediately.

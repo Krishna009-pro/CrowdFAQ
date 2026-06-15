@@ -1,0 +1,101 @@
+const mongoose = require("mongoose");
+
+const questionSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 8,
+      maxlength: 180,
+    },
+    body: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 10,
+      maxlength: 5000,
+    },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+    embedding: {
+      type: [Number],
+      default: [],
+      validate: {
+        validator(value) {
+          return value.length === 0 || value.length === 1536;
+        },
+        message: "Question embedding must contain 1536 dimensions",
+      },
+    },
+    duplicateOf: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Question",
+      default: null,
+      index: true,
+    },
+    acceptedAnswerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Answer",
+      default: null,
+      index: true,
+    },
+    upvoteCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    downvoteCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    duplicateScore: {
+      type: Number,
+      default: null,
+      min: 0,
+      max: 1,
+    },
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "answered",
+        "verified",
+        "resolved",
+        "duplicate",
+        "closed",
+      ],
+      default: "pending",
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+    },
+    toObject: {
+      virtuals: true,
+    },
+  }
+);
+
+questionSchema.index({ createdAt: -1, _id: -1 });
+
+questionSchema.virtual("answers", {
+  ref: "Answer",
+  localField: "_id",
+  foreignField: "question",
+});
+
+module.exports = mongoose.model("Question", questionSchema);

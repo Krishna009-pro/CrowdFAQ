@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Samagama AQ Portal</title>
+  </head>
+  <body>
+    <noscript>You need JavaScript enabled to use this app.</noscript>
+    <div
+      id="root"
+      style="min-height: 100vh; background: #020617; color: white; padding: 24px; font-family: Arial, sans-serif;"
+    >
+      Loading Samagama AQ Portal...
+    </div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var root = document.getElementById("root");
+        if (!root) return;
+        root.innerHTML =
+          '<div style="max-width: 900px; margin: 0 auto; border: 1px solid #ef4444; background: #450a0a; padding: 16px; border-radius: 8px;">' +
+          '<h1 style="font-size: 20px; margin: 0 0 8px;">Frontend runtime error</h1>' +
+          '<pre style="white-space: pre-wrap; font-size: 13px;">' +
+          String(event.message || "Unknown error") +
+          "</pre></div>";
+      });
+    </script>
+  </body>
+</html>
