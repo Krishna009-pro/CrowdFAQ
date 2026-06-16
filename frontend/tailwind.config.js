@@ -6,7 +6,7 @@ module.exports = {
     extend: {
       fontFamily: {
         serif: ['Cormorant Garamond', 'Georgia', 'serif'],
-        sans: ['Outfit', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

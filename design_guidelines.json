@@ -3,7 +3,7 @@
   "archetype": "Archetype 4 (Swiss & High-Contrast) + Editorial Mix",
   "rationale": "For a community knowledge base handling verified information, trust and clarity are paramount. Combining strict Swiss minimalism (grid alignments, stark off-white/black contrast, 1px borders) with Editorial typography (large serif headings) creates an authoritative 'digital newspaper/curated platform' feel. This avoids generic SaaS aesthetics.",
   "instructions_to_main_agent": {
-    "font_imports": "Import 'Cormorant Garamond' and 'Outfit' from Google Fonts in index.css.",
+    "font_imports": "Import 'Cormorant Garamond' and 'Inter' from Google Fonts in index.css.",
     "component_creation": "Use Shadcn UI components but heavily override them. Remove border-radius (`rounded-none` or `rounded-sm`), replace soft shadows with solid borders, and enforce the high-contrast color scheme. Go cardless where possible to create an editorial flow.",
     "file_extensions": "Use .js and .jsx extensions. Do not use .tsx.",
     "testing": "Always add `data-testid` to interactive elements."
@@ -11,7 +11,7 @@
   "typography": {
     "primary_font": "Cormorant Garamond",
     "primary_font_usage": "Used ONLY for prominent headings (H1/H2) like Question Titles and Page Headers to provide an authoritative, published feel. Never used for UI elements.",
-    "secondary_font": "Outfit",
+    "secondary_font": "Inter",
     "secondary_font_usage": "Used for all standard UI, body text, metadata, tags, inputs, and buttons. Clean and geometric, providing high readability.",
     "hierarchy": {
       "h1": "font-serif text-4xl md:text-5xl lg:text-6xl tracking-tight leading-none text-[#111110]",
