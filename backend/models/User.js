@@ -110,6 +110,10 @@ userSchema.pre("validate", async function () {
 
 // Compare entered password with hashed password in DB
 userSchema.methods.verifyPassword = async function (enteredPassword) {
+  if (!this.passwordHash) {
+    return false;
+  }
+
   return bcrypt.compare(enteredPassword, this.passwordHash);
 };
 
