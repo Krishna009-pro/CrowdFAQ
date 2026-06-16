@@ -1,39 +1,27 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+
+const {
+  register,
+  login,
+  getMe,
+  logout,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+} = require("../controllers/authController");
+const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Simple mock registration for development
-router.post("/register", async (req, res, next) => {
-  try {
-    const { displayName, email } = req.body;
-    
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({ displayName, email });
-    }
+// Public routes
+router.post("/register", register);
+router.post("/login", login);
+router.post("/logout", logout);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
+router.post("/verify-email/:token", verifyEmail);
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.status(200).json({
-      success: true,
-      data: { user },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post("/logout", (req, res) => {
-  res.clearCookie("token");
-  res.status(200).json({ success: true });
-});
+// Protected routes
+router.get("/me", protect, getMe);
 
 module.exports = router;

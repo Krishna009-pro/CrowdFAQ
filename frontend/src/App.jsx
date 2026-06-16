@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import {
   BadgeCheck,
+  Loader2,
   BookOpen,
   Bot,
   CircleCheck,
@@ -294,6 +295,35 @@ const Home = () => {
 };
 
 const App = () => {
+  const { setUser, setAuthLoading, authLoading } = useStore();
+
+  // Check for existing session on app mount
+  const checkAuth = useCallback(async () => {
+    try {
+      const response = await apiClient.get("auth/me");
+      if (response.data?.success && response.data?.data?.user) {
+        setUser(response.data.data.user);
+      }
+    } catch {
+      // 401 or network error — user is not logged in, continue as guest
+    } finally {
+      setAuthLoading(false);
+    }
+  }, [setUser, setAuthLoading]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Show loading spinner while checking auth session
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#071018]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#84BBE1]" />
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

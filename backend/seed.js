@@ -74,7 +74,7 @@ async function seedDatabase() {
     const adminUser = await User.create({
       displayName: "System Admin",
       email: "admin@CrowdFAQ.local",
-      passwordHash: createPasswordHash("seed-admin-no-login"),
+      password: "Admin@123456",
       role: "admin",
       reputationScore: 1000,
       badges: ["verified", "founder"]
