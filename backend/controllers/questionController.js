@@ -9,6 +9,21 @@ const {
 
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 200;
+const QUESTION_STATUSES = [
+  "pending",
+  "answered",
+  "verified",
+  "resolved",
+  "duplicate",
+  "closed",
+];
+const SORT_OPTIONS = {
+  latest: { sort: { _id: -1 }, cursorField: "_id", direction: -1 },
+  oldest: { sort: { _id: 1 }, cursorField: "_id", direction: 1 },
+  popular: { sort: { upvoteCount: -1, _id: -1 }, cursorField: "upvoteCount", direction: -1 },
+  answered: { sort: { answerCount: -1, _id: -1 }, cursorField: "answerCount", direction: -1 },
+  unanswered: { sort: { answerCount: 1, _id: -1 }, cursorField: "answerCount", direction: 1 },
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -16,11 +31,87 @@ const MAX_PAGE_LIMIT = 200;
  * Build a Mongoose filter object from query params.
  * Supports: cursor (pagination), tag, status, search (text match).
  */
-const buildQuestionFilter = ({ cursor, tag, status, search }) => {
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const normalizeSort = (sort) => {
+  switch (sort) {
+    case "newest":
+      return "latest";
+    case "votes":
+      return "popular";
+    default:
+      return SORT_OPTIONS[sort] ? sort : "latest";
+  }
+};
+
+const encodeCursor = (payload) =>
+  Buffer.from(JSON.stringify(payload), "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+
+const decodeCursor = (cursor) => {
+  const normalized = cursor.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4)) % 4),
+    "="
+  );
+
+  return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+};
+
+const parseCursor = (cursor, sort) => {
+  if (!cursor) {
+    return null;
+  }
+
+  if (mongoose.Types.ObjectId.isValid(cursor)) {
+    return {
+      sort,
+      id: new mongoose.Types.ObjectId(cursor),
+      values: {},
+    };
+  }
+
+  try {
+    const decoded = decodeCursor(cursor);
+    if (decoded.sort !== sort) {
+      const error = new Error("Cursor sort does not match requested sort");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(decoded.id)) {
+      const error = new Error("Invalid cursor");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return {
+      sort,
+      id: new mongoose.Types.ObjectId(decoded.id),
+      values: decoded.values || {},
+    };
+  } catch (error) {
+    if (!error.statusCode) {
+      error.statusCode = 400;
+      error.message = "Invalid cursor";
+    }
+    throw error;
+  }
+};
+
+const buildQuestionFilter = ({ tag, status, search }) => {
   const filter = {};
 
   // Status filter
   if (status) {
+    if (!QUESTION_STATUSES.includes(status)) {
+      const error = new Error("Invalid question status filter");
+      error.statusCode = 400;
+      throw error;
+    }
     filter.status = status;
   } else {
     // Default: hide terminal states from the community feed
@@ -34,20 +125,11 @@ const buildQuestionFilter = ({ cursor, tag, status, search }) => {
 
   // Basic text search on title + body (no Atlas Search required)
   if (search) {
+    const escapedSearch = escapeRegex(search);
     filter.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { body:  { $regex: search, $options: "i" } },
+      { title: { $regex: escapedSearch, $options: "i" } },
+      { body:  { $regex: escapedSearch, $options: "i" } },
     ];
-  }
-
-  // Cursor-based pagination (keyset on _id)
-  if (cursor) {
-    if (!mongoose.Types.ObjectId.isValid(cursor)) {
-      const error = new Error("Invalid cursor");
-      error.statusCode = 400;
-      throw error;
-    }
-    filter._id = { $lt: new mongoose.Types.ObjectId(cursor) };
   }
 
   return filter;
@@ -55,14 +137,67 @@ const buildQuestionFilter = ({ cursor, tag, status, search }) => {
 
 /**
  * Resolve sort order from a ?sort= query param.
- * Supported values: newest (default), oldest, votes
+ * Supported values: latest (default), popular, answered, unanswered
  */
 const buildSortOrder = (sort) => {
-  switch (sort) {
-    case "oldest": return { _id: 1 };
-    case "votes":  return { upvoteCount: -1, _id: -1 };
-    default:       return { _id: -1 }; // newest first
+  return SORT_OPTIONS[sort].sort;
+};
+
+const buildCursorMatch = (cursorData, sort) => {
+  if (!cursorData) {
+    return null;
   }
+
+  const option = SORT_OPTIONS[sort];
+  const idTieBreaker = { _id: { $lt: cursorData.id } };
+
+  if (option.cursorField === "_id") {
+    return {
+      _id: option.direction === -1
+        ? { $lt: cursorData.id }
+        : { $gt: cursorData.id },
+    };
+  }
+
+  const cursorValue = Number(cursorData.values[option.cursorField]);
+  if (!Number.isFinite(cursorValue)) {
+    const error = new Error("Invalid cursor");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    $or: [
+      {
+        [option.cursorField]: option.direction === -1
+          ? { $lt: cursorValue }
+          : { $gt: cursorValue },
+      },
+      {
+        [option.cursorField]: cursorValue,
+        ...idTieBreaker,
+      },
+    ],
+  };
+};
+
+const buildNextCursor = (question, sort) => {
+  if (!question) {
+    return null;
+  }
+
+  const option = SORT_OPTIONS[sort];
+  const values = {};
+
+  if (option.cursorField !== "_id") {
+    values[option.cursorField] = question[option.cursorField] || 0;
+  }
+
+  return encodeCursor({
+    sort,
+    id: question._id.toString(),
+    values,
+  });
 };
 
 // ─── Background AI Draft ─────────────────────────────────────────────────────
@@ -164,14 +299,34 @@ const getQuestions = async (req, res, next) => {
     const tag    = req.query.tag    ? String(req.query.tag)    : null;
     const status = req.query.status ? String(req.query.status) : null;
     const search = req.query.search ? String(req.query.search) : null;
-    const sort   = req.query.sort   ? String(req.query.sort)   : "newest";
+    const sort   = normalizeSort(req.query.sort ? String(req.query.sort) : "latest");
 
-    const filter    = buildQuestionFilter({ cursor, tag, status, search });
+    const filter    = buildQuestionFilter({ tag, status, search });
     const sortOrder = buildSortOrder(sort);
+    const cursorMatch = buildCursorMatch(parseCursor(cursor, sort), sort);
 
     // Single aggregation pipeline — avoids N+1 answerCount queries
     const pipeline = [
       { $match: filter },
+      {
+        $lookup: {
+          from: "answers",
+          let: { questionId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$question", "$$questionId"] } } },
+            { $count: "count" },
+          ],
+          as: "_answerStats",
+        },
+      },
+      {
+        $addFields: {
+          answerCount: {
+            $ifNull: [{ $first: "$_answerStats.count" }, 0],
+          },
+        },
+      },
+      ...(cursorMatch ? [{ $match: cursorMatch }] : []),
       { $sort: sortOrder },
       { $limit: limit + 1 }, // fetch one extra to determine hasMore
       {
@@ -187,22 +342,9 @@ const getQuestions = async (req, res, next) => {
       },
       { $unwind: { path: "$author", preserveNullAndEmpty: true } },
       {
-        $lookup: {
-          from:         "answers",
-          localField:   "_id",
-          foreignField: "question",
-          as:           "_answers",
-        },
-      },
-      {
-        $addFields: {
-          answerCount: { $size: "$_answers" },
-        },
-      },
-      {
         $project: {
-          embedding: 0, // never send embedding to clients
-          _answers:  0, // internal lookup array
+          embedding:    0, // never send embedding to clients
+          _answerStats: 0, // internal lookup array
         },
       },
     ];
@@ -211,15 +353,19 @@ const getQuestions = async (req, res, next) => {
 
     const hasMore   = questions.length > limit;
     const pageItems = hasMore ? questions.slice(0, limit) : questions;
-    const nextCursor = hasMore
-      ? pageItems[pageItems.length - 1]._id.toString()
-      : null;
+    const nextCursor = hasMore ? buildNextCursor(pageItems[pageItems.length - 1], sort) : null;
 
     return res.status(200).json({
       success: true,
       data: {
         questions: pageItems,
-        pagination: { limit, nextCursor, hasMore },
+        pagination: {
+          limit,
+          count: pageItems.length,
+          sort,
+          nextCursor,
+          hasMore,
+        },
       },
     });
   } catch (error) {
@@ -363,7 +509,6 @@ const editQuestion = async (req, res, next) => {
 const deleteQuestion = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const hardDelete = req.query.hard === "true" && req.user.role === "admin";
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -381,23 +526,12 @@ const deleteQuestion = async (req, res, next) => {
     }
 
     const isAuthor = question.author.toString() === req.user._id.toString();
-    const isAdmin  = req.user.role === "admin";
+    const isStaff  = ["admin", "moderator"].includes(req.user.role);
 
-    if (!isAuthor && !isAdmin) {
+    if (!isAuthor && !isStaff) {
       return res.status(403).json({
         success: false,
-        error: { message: "Not authorised to delete this question" },
-      });
-    }
-
-    if (hardDelete) {
-      // Hard delete: remove question + all its answers
-      await Answer.deleteMany({ question: id });
-      await question.deleteOne();
-
-      return res.status(200).json({
-        success: true,
-        data: { message: "Question permanently deleted" },
+        error: { message: "Not authorised to close this question" },
       });
     }
 
