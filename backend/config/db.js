@@ -45,10 +45,15 @@ const connectToDatabase = async (uri = env.mongodbUri) => {
     await mongoose.connect(uri, buildMongoOptions(uri));
     // Mark health status as connected after a successful connection.
     databaseStatus = "connected";
+    console.log(
+      `Database connected: ${mongoose.connection.host}/${mongoose.connection.name}`
+    );
     return mongoose.connection;
   } catch (error) {
     // Mark health status as failed while preserving the original error.
     databaseStatus = "connection_failed";
+    console.log(
+      `Database not connected - check mongodb is running or not!`);
     throw error;
   }
 };
