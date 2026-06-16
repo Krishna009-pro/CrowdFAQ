@@ -1,0 +1,136 @@
+{
+  "theme": "Light",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) + Editorial Mix",
+  "rationale": "For a community knowledge base handling verified information, trust and clarity are paramount. Combining strict Swiss minimalism (grid alignments, stark off-white/black contrast, 1px borders) with Editorial typography (large serif headings) creates an authoritative 'digital newspaper/curated platform' feel. This avoids generic SaaS aesthetics.",
+  "instructions_to_main_agent": {
+    "font_imports": "Import 'Cormorant Garamond' and 'Outfit' from Google Fonts in index.css.",
+    "component_creation": "Use Shadcn UI components but heavily override them. Remove border-radius (`rounded-none` or `rounded-sm`), replace soft shadows with solid borders, and enforce the high-contrast color scheme. Go cardless where possible to create an editorial flow.",
+    "file_extensions": "Use .js and .jsx extensions. Do not use .tsx.",
+    "testing": "Always add `data-testid` to interactive elements."
+  },
+  "typography": {
+    "primary_font": "Cormorant Garamond",
+    "primary_font_usage": "Used ONLY for prominent headings (H1/H2) like Question Titles and Page Headers to provide an authoritative, published feel. Never used for UI elements.",
+    "secondary_font": "Outfit",
+    "secondary_font_usage": "Used for all standard UI, body text, metadata, tags, inputs, and buttons. Clean and geometric, providing high readability.",
+    "hierarchy": {
+      "h1": "font-serif text-4xl md:text-5xl lg:text-6xl tracking-tight leading-none text-[#111110]",
+      "h2": "font-serif text-2xl md:text-3xl lg:text-4xl tracking-tight text-[#111110]",
+      "h3": "font-sans text-xl md:text-2xl font-medium text-[#111110]",
+      "body": "font-sans text-base leading-relaxed text-[#4A4A46]",
+      "small_label": "font-sans text-xs uppercase tracking-[0.2em] font-bold text-[#666661]"
+    }
+  },
+  "colors": {
+    "background": {
+      "main": "#F9F9F8",
+      "surface": "#FFFFFF",
+      "surface_hover": "#F0F0EE"
+    },
+    "text": {
+      "primary": "#111110",
+      "secondary": "#4A4A46",
+      "muted": "#8A8A85",
+      "inverse": "#FFFFFF"
+    },
+    "brand": {
+      "primary": "#004B87",
+      "primary_hover": "#003A69",
+      "accent": "#D9381E",
+      "accent_hover": "#B82F18"
+    },
+    "ui": {
+      "border": "#E6E6E1",
+      "border_focus": "#111110",
+      "success": "#1B4D3E",
+      "success_bg": "#E8F0ED",
+      "warning": "#E5A910",
+      "error": "#D9381E"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous spacing. Allow content to breathe. Use negative space instead of heavy borders to group elements where possible.",
+    "containers": "max-w-7xl mx-auto px-4 md:px-8 lg:px-12",
+    "grid_system": "Bento-style layouts for admin/analytics (gap-4 or gap-6). Asymmetric or editorial layouts for marketing/home (gap-8 to gap-16).",
+    "card_padding": "p-6 md:p-8"
+  },
+  "surface_styles": {
+    "cards": "bg-white border border-[#E6E6E1] rounded-none shadow-none transition-colors",
+    "buttons_primary": "bg-[#111110] text-white hover:bg-[#004B87] px-6 py-3 rounded-none text-sm font-medium tracking-wide transition-all",
+    "buttons_secondary": "bg-transparent border border-[#E6E6E1] text-[#111110] hover:bg-[#F9F9F8] hover:border-[#111110] px-6 py-3 rounded-none text-sm font-medium transition-all",
+    "inputs": "bg-white border border-[#E6E6E1] rounded-none px-4 py-3 text-base focus:ring-1 focus:ring-[#111110] focus:border-[#111110] outline-none",
+    "tags": "bg-[#F9F9F8] border border-[#E6E6E1] text-[#666661] text-[10px] sm:text-xs px-3 py-1 uppercase tracking-wider rounded-none font-medium"
+  },
+  "motion_and_interaction": {
+    "hover_states": "Interactive surfaces get a subtle background shift (to #F0F0EE) or border darkening. Text remains high contrast.",
+    "transitions": "transition-all duration-200 ease-in-out",
+    "focus": "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F9F8] focus-visible:ring-[#111110]"
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "stroke-width: 1.5. Keep icons un-filled to match the clean, line-art aesthetic of the Swiss theme."
+  },
+  "testing": {
+    "rules": "All interactive elements MUST include a `data-testid` attribute using kebab-case role-based naming (e.g., `data-testid=\"search-submit-button\"`, `data-testid=\"upvote-question-btn\"`)."
+  },
+  "pages": {
+    "home_question_feed": {
+      "layout": "2-column grid: Main content (Feed) spanning 8 columns, Right Sidebar spanning 4 columns.",
+      "components": "Prominent top search bar with large padding. Question cards feature a vertical voting block on the left (chevron-up, count, chevron-down). Main card area: Serif H2 for title, truncated description, tags at bottom, author/time at bottom right. Sidebar features 'Trending Topics' and 'Top Contributors'."
+    },
+    "search_results": {
+      "layout": "Sidebar-left layout: Filters (3 cols) + Results (9 cols).",
+      "components": "Large Serif 'Search Results for X'. Filter section includes Status (Answered, Unanswered, Verified), Category, Date. Empty state: minimalist text layout with prominent 'Ask a Question' primary CTA."
+    },
+    "question_detail": {
+      "layout": "Main content (9 cols) + Context Sidebar (3 cols for Related).",
+      "components": "Question Header: Massive Serif H1, Author profile block. Content block. Answers section separated by strict horizontal lines (`border-t border-[#E6E6E1]`). Accepted answer highlighted with `border-l-4 border-[#004B87] bg-[#F9F9F8]` to immediately draw the eye. Rich text formatting for code, lists."
+    },
+    "ask_question": {
+      "layout": "Single centered column, max-w-3xl for focus.",
+      "components": "Form with distinct separation. Title input is massive (text-2xl or 3xl) placeholder 'What do you need to know?'. 'Similar questions' widget slides in dynamically under the title input. WYSIWYG editor for description. Drag-and-drop file attachment zone (dashed border)."
+    },
+    "login": {
+      "layout": "Split screen. Left: 50% width pure white form container. Right: 50% width architectural background image.",
+      "components": "Massive 'Welcome' Serif heading. Stacked inputs. Full-width primary CTA."
+    },
+    "signup": {
+      "layout": "Matches Login layout.",
+      "components": "Simple stacked inputs. Prominent 'Join the Community' text."
+    },
+    "user_profile": {
+      "layout": "Top hero banner (off-white bg, no heavy colors) + bottom content.",
+      "components": "Hero contains large Avatar, Name, Reputation Score, Join Date. Content below is a pure tabbed interface (`border-b` style tabs): Questions, Answers, Saved. Lists reuse the Question Card component."
+    },
+    "notifications": {
+      "layout": "Narrow centered column, max-w-2xl.",
+      "components": "Simple list view. Unread items have a faint `#004B87` left border and bold text. Mark all as read secondary button at top."
+    },
+    "admin_dashboard": {
+      "layout": "Sidebar nav + Main content.",
+      "components": "Top: Bento grid of 4 key metrics (Total Qs, As, Users, Flagged). Middle: Two charts (Activity over time). Bottom: Recent user signups/activity feed."
+    },
+    "analytics_page": {
+      "layout": "Full width with dense bento grid.",
+      "components": "Charts for Most Viewed Questions, Most Searched Topics, Engagement Rates. Use clean, monochrome charts (Shadcn/Recharts) with `#004B87` as the primary data color."
+    },
+    "reports_moderation": {
+      "layout": "Full width list/table view.",
+      "components": "Dense tabular layout. Columns: Flagged Item, Reason, Reporter, Action. Actions are tight group of small buttons (Approve, Reject, Delete)."
+    },
+    "categories_topics": {
+      "layout": "Grid layout. grid-cols-1 md:grid-cols-2 lg:grid-cols-3.",
+      "components": "Large rectangular cards with border. Category Name in Serif, Question count, small description, and top 3 tags listed at the bottom."
+    }
+  },
+  "media": {
+    "abstract_auth_bg": "https://images.unsplash.com/photo-1483366774565-c783b9f70e2c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGFyY2hpdGVjdHVyZSUyMG1pbmltYWxpc3R8ZW58MHx8fHwxNzgxNjMwNTQyfDA&ixlib=rb-4.1.0&q=85",
+    "abstract_hero_bg": "https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGFyY2hpdGVjdHVyZSUyMG1pbmltYWxpc3R8ZW58MHx8fHwxNzgxNjMwNTQyfDA&ixlib=rb-4.1.0&q=85",
+    "user_avatars": [
+      "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwzfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODE1MzkzMzl8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODE1MzkzMzl8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1521119989659-a83eee488004?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODE1MzkzMzl8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.pexels.com/photos/12396627/pexels-photo-12396627.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+    ]
+  }
+}
