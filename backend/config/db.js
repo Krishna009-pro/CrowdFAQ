@@ -6,6 +6,7 @@ const env = require("./env");
 
 // Tracks connection state for the /api/v1/health endpoint.
 let databaseStatus = "disconnected";
+const LOCAL_FALLBACK_URI = "mongodb://localhost:27017/CrowdFAQ";
 
 // Returns the latest known database connection status.
 const getDatabaseStatus = () => databaseStatus;
@@ -32,6 +33,18 @@ const buildMongoOptions = (uri) => {
   return options;
 };
 
+const isLocalMongoUri = (uri) =>
+  uri.includes("localhost") || uri.includes("127.0.0.1");
+
+const connectWithUri = async (uri) => {
+  await mongoose.connect(uri, buildMongoOptions(uri));
+  databaseStatus = "connected";
+  console.log(
+    `Database connected: ${mongoose.connection.host}/${mongoose.connection.name}`
+  );
+  return mongoose.connection;
+};
+
 // Connects to MongoDB and updates health-check status.
 const connectToDatabase = async (uri = env.mongodbUri) => {
   // Allow the API to boot without DB config, but report that clearly.
@@ -41,19 +54,29 @@ const connectToDatabase = async (uri = env.mongodbUri) => {
   }
 
   try {
-    // Opens the Mongoose connection using the appropriate options.
-    await mongoose.connect(uri, buildMongoOptions(uri));
-    // Mark health status as connected after a successful connection.
-    databaseStatus = "connected";
-    console.log(
-      `Database connected: ${mongoose.connection.host}/${mongoose.connection.name}`
-    );
-    return mongoose.connection;
+    return await connectWithUri(uri);
   } catch (error) {
-    // Mark health status as failed while preserving the original error.
+    const shouldTryLocalFallback =
+      !isLocalMongoUri(uri) && uri !== LOCAL_FALLBACK_URI;
+
+    if (shouldTryLocalFallback) {
+      console.warn(
+        "Primary database connection failed. Falling back to local MongoDB."
+      );
+
+      try {
+        return await connectWithUri(LOCAL_FALLBACK_URI);
+      } catch (fallbackError) {
+        databaseStatus = "connection_failed";
+        console.log(
+          "Database not connected - check Atlas or local MongoDB is running."
+        );
+        throw fallbackError;
+      }
+    }
+
     databaseStatus = "connection_failed";
-    console.log(
-      `Database not connected - check mongodb is running or not!`);
+    console.log("Database not connected - check MongoDB is running or not!");
     throw error;
   }
 };
