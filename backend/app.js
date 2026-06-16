@@ -27,6 +27,9 @@ const questionRoutes = require("./routes/questionRoutes");
 // Routes for search and duplicate-question triage.
 const searchRoutes = require("./routes/searchRoutes");
 
+// Routes for user profiles and user-owned content.
+const userRoutes = require("./routes/userRoutes");
+
 
 // Creates the Express app instance.
 const app = express();
@@ -56,6 +59,9 @@ app.use("/api/v1/answers", answerRoutes);
 
 // Mounts authentication endpoints under /api/v1/auth.
 app.use("/api/v1/auth", authRoutes);
+
+// Mounts user profile endpoints under /api/v1/users.
+app.use("/api/v1/users", userRoutes);
 
 
 // Handles requests that did not match any route above.

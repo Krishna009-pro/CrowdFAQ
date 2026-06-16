@@ -22,11 +22,10 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
     // Hashed password value. Hidden from normal query results by select: false.
-    password: {
+    passwordHash: {
       type: String,
       required: true,
-      minlength: 6,
-      select: false, // Don't include password in queries by default
+      select: false,
     },
     // Permission level used by auth/admin middleware.
     role: {
@@ -63,23 +62,58 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform(doc, ret) {
+        delete ret.passwordHash;
+        delete ret.emailVerificationToken;
+        delete ret.emailVerificationExpire;
+        delete ret.resetPasswordToken;
+        delete ret.resetPasswordExpire;
+        return ret;
+      },
+    },
+    toObject: {
+      transform(doc, ret) {
+        delete ret.passwordHash;
+        delete ret.emailVerificationToken;
+        delete ret.emailVerificationExpire;
+        delete ret.resetPasswordToken;
+        delete ret.resetPasswordExpire;
+        return ret;
+      },
+    },
   }
 );
 
-// Hash password before saving
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) {
+userSchema.virtual("password").set(function (password) {
+  this._plainPassword = password;
+});
+
+userSchema.statics.hashPassword = async function (password) {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+};
+
+// Backward-compatible virtual password input for seed scripts and older callers.
+userSchema.pre("validate", async function () {
+  if (this._plainPassword === undefined) {
     return;
   }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  if (!this._plainPassword || this._plainPassword.length < 6) {
+    this.invalidate("password", "Password must be at least 6 characters");
+    return;
+  }
+
+  this.passwordHash = await this.constructor.hashPassword(this._plainPassword);
 });
 
 // Compare entered password with hashed password in DB
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+userSchema.methods.verifyPassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.passwordHash);
 };
+
+userSchema.methods.matchPassword = userSchema.methods.verifyPassword;
 
 // Generate and hash password reset token
 userSchema.methods.getResetPasswordToken = function () {

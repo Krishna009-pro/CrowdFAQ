@@ -20,9 +20,12 @@ const sendTokenResponse = (user, statusCode, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
 
-  // Remove password from output
   const userObj = user.toObject();
-  delete userObj.password;
+  delete userObj.passwordHash;
+  delete userObj.emailVerificationToken;
+  delete userObj.emailVerificationExpire;
+  delete userObj.resetPasswordToken;
+  delete userObj.resetPasswordExpire;
 
   res.status(statusCode).cookie("token", token, cookieOptions).json({
     success: true,
@@ -67,11 +70,12 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create user (password is hashed by the pre-save hook)
+    const passwordHash = await User.hashPassword(password);
+
     const user = await User.create({
       displayName,
       email,
-      password,
+      passwordHash,
     });
 
     sendTokenResponse(user, 201, res);
@@ -97,8 +101,8 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Find user and explicitly include password field
-    const user = await User.findOne({ email }).select("+password");
+    // Find user and explicitly include passwordHash for verification.
+    const user = await User.findOne({ email }).select("+passwordHash");
 
     if (!user) {
       return res.status(401).json({
@@ -109,8 +113,7 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await user.verifyPassword(password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -254,8 +257,7 @@ const resetPassword = async (req, res, next) => {
       });
     }
 
-    // Set new password and clear reset fields
-    user.password = password;
+    user.passwordHash = await User.hashPassword(password);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
