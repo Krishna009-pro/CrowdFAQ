@@ -12,6 +12,9 @@ const { corsOptions } = require("./config/cors");
 // Final middleware for 404 and error responses.
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 
+// Routes for admin moderation, dashboard stats, and content management.
+const adminRoutes = require("./routes/adminRoutes");
+
 // Routes for answer creation, voting, accepting, and official answers.
 const answerRoutes = require("./routes/answerRoutes");
 
@@ -62,6 +65,9 @@ app.use("/api/v1/auth", authRoutes);
 
 // Mounts user profile endpoints under /api/v1/users.
 app.use("/api/v1/users", userRoutes);
+
+// Mounts admin moderation endpoints under /api/v1/admin.
+app.use("/api/v1/admin", adminRoutes);
 
 
 // Handles requests that did not match any route above.

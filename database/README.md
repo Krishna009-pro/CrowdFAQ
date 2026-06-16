@@ -70,7 +70,11 @@ moderator
 admin
 ```
 
-Note: The current auth flow is still a simple development registration flow. Password values are stored as hashes with a lightweight built-in `scrypt` helper, but a future production version should add full login verification, email verification, password reset, and stronger session management.
+Moderation-relevant user field:
+
+```text
+role
+```
 
 ## Question Model
 
@@ -151,6 +155,8 @@ Current fields:
 | `isOfficial` | Boolean | Defaults to `false`, indexed |
 | `upvoteCount` | Number | Defaults to `0` |
 | `downvoteCount` | Number | Defaults to `0` |
+| `upvotedBy` | ObjectId array | Hidden from normal queries, used to prevent duplicate upvotes |
+| `downvotedBy` | ObjectId array | Hidden from normal queries, used to prevent duplicate downvotes |
 | `createdAt` | Date | Added by timestamps |
 | `updatedAt` | Date | Added by timestamps |
 
@@ -250,7 +256,13 @@ Authentication and users:
 
 ```text
 POST /api/v1/auth/register
+POST /api/v1/auth/login
 POST /api/v1/auth/logout
+GET  /api/v1/auth/me
+PATCH /api/v1/users/me
+GET  /api/v1/users/:id
+GET  /api/v1/users/:id/questions
+GET  /api/v1/users/:id/answers
 ```
 
 Questions:
@@ -265,9 +277,25 @@ Answers:
 
 ```text
 POST  /api/v1/answers
+PATCH /api/v1/answers/:id
+DELETE /api/v1/answers/:id
 PATCH /api/v1/answers/:id/accept
 POST  /api/v1/answers/:id/vote
 POST  /api/v1/answers/official/create
+```
+
+Admin moderation:
+
+```text
+GET    /api/v1/admin/stats
+GET    /api/v1/admin/users
+PATCH  /api/v1/admin/users/:id/role
+GET    /api/v1/admin/questions
+PATCH  /api/v1/admin/questions/:id/status
+DELETE /api/v1/admin/questions/:id
+GET    /api/v1/admin/answers
+PATCH  /api/v1/admin/answers/:id/official
+DELETE /api/v1/admin/answers/:id
 ```
 
 Search:
@@ -297,25 +325,6 @@ Current official answers use `Answer.isOfficial`. For richer admin history, add:
 Answer.officialSource
 Answer.verifiedBy
 Answer.verifiedAt
-```
-
-### Add Separate Vote Tracking
-
-Current voting uses counters only. To prevent duplicate votes, add a separate vote collection:
-
-```text
-votes
-```
-
-Suggested fields:
-
-```text
-user
-targetType
-targetId
-voteType
-createdAt
-updatedAt
 ```
 
 ### Add Categories

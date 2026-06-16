@@ -224,6 +224,48 @@ git push origin feature/my-update
 
 Then open a pull request to `main`.
 
+## Admin APIs
+
+The backend now includes a moderation/admin API surface implemented under:
+
+```text
+backend/routes/adminRoutes.js
+backend/controllers/adminController.js
+backend/middleware/adminMiddleware.js
+```
+
+Available admin endpoints:
+
+```text
+GET    /api/v1/admin/stats
+GET    /api/v1/admin/users
+PATCH  /api/v1/admin/users/:id/role
+GET    /api/v1/admin/questions
+PATCH  /api/v1/admin/questions/:id/status
+DELETE /api/v1/admin/questions/:id
+GET    /api/v1/admin/answers
+PATCH  /api/v1/admin/answers/:id/official
+DELETE /api/v1/admin/answers/:id
+```
+
+Role rules:
+
+- `moderator` and `admin` can access moderation dashboards and content controls.
+- Only `admin` can change user roles and permanently delete moderated content.
+
+Realtime moderation events exposed to clients:
+
+```text
+new_answer
+answer_accepted
+official_answer_created
+question_status_updated
+```
+
+Integration note:
+
+- The admin router code is ready, but the running Express app must mount `adminRoutes` before `/api/v1/admin/*` becomes live.
+
 ## Notes
 
 - Keep secrets in `backend/.env`.
