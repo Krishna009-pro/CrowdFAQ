@@ -54,6 +54,20 @@ const answerSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // Users who have upvoted this answer. Used to prevent duplicate votes.
+    upvotedBy: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+      select: false,
+    },
+    // Users who have downvoted this answer. Used to prevent duplicate votes.
+    downvotedBy: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+      select: false,
+    },
   },
   {
     timestamps: true,
