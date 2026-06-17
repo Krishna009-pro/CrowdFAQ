@@ -10,7 +10,7 @@ const adminLinks = [
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export const AdminShell = ({ children, title, eyebrow, actions }) => {
+export const AdminShell = ({ children, title, eyebrow, actions }: any) => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-brand-paper flex" data-testid="admin-shell">

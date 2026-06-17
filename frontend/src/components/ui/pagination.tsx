@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 const Pagination = ({
   className,
   ...props
-}) => (
+}: any) => (
   <nav
     role="navigation"
     aria-label="pagination"
@@ -34,7 +34,7 @@ const PaginationLink = ({
   isActive,
   size = "icon",
   ...props
-}) => (
+}: any) => (
   <a
     aria-current={isActive ? "page" : undefined}
     className={cn(buttonVariants({
@@ -48,7 +48,7 @@ PaginationLink.displayName = "PaginationLink"
 const PaginationPrevious = ({
   className,
   ...props
-}) => (
+}: any) => (
   <PaginationLink
     aria-label="Go to previous page"
     size="default"
@@ -63,7 +63,7 @@ PaginationPrevious.displayName = "PaginationPrevious"
 const PaginationNext = ({
   className,
   ...props
-}) => (
+}: any) => (
   <PaginationLink
     aria-label="Go to next page"
     size="default"
@@ -78,7 +78,7 @@ PaginationNext.displayName = "PaginationNext"
 const PaginationEllipsis = ({
   className,
   ...props
-}) => (
+}: any) => (
   <span
     aria-hidden
     className={cn("flex h-9 w-9 items-center justify-center", className)}

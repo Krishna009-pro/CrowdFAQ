@@ -27,7 +27,7 @@ export default function SearchResults() {
       const cOk = cats.length === 0 || cats.includes(qq.category);
       return matches && sOk && cOk;
     });
-    if (sort === "newest") list = list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (sort === "newest") list = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     if (sort === "votes") list = list.sort((a, b) => b.votes - a.votes);
     if (sort === "views") list = list.sort((a, b) => b.views - a.views);
     return list;
