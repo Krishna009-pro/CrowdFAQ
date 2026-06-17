@@ -5,6 +5,7 @@ const Question = require("./models/Question");
 const Answer = require("./models/Answer");
 const Notification = require("./models/Notification");
 const Report = require("./models/Report");
+const { generateEmbedding } = require("./services/aiService");
 
 const mockUsers = [
   { mockId: 'u1', displayName: 'Mira Halverson', handle: 'mira.h', title: 'Staff Engineer', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80', reputationScore: 18420, email: 'mira.h@crowdfaq.local', role: 'admin' },
@@ -267,6 +268,14 @@ async function seedDatabase() {
 
     for (const q of mockQuestions) {
       const author = userMap[q.authorMockId];
+      
+      let embedding = [];
+      try {
+        embedding = await generateEmbedding(`${q.title} ${q.body}`);
+      } catch (err) {
+        console.warn(`Failed to generate embedding for question "${q.title}":`, err.message);
+      }
+
       const createdQuestion = await Question.create({
         title: q.title,
         body: q.body,
@@ -276,6 +285,8 @@ async function seedDatabase() {
         author: author._id,
         tags: q.tags,
         status: q.status,
+        category: q.category,
+        embedding,
         upvoteCount: q.upvoteCount,
         downvoteCount: q.downvoteCount,
         createdAt: new Date(q.createdAt)

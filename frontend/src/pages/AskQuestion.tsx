@@ -67,6 +67,7 @@ export default function AskQuestion() {
         title,
         body,
         tags: finalTags,
+        category: cat,
       });
 
       if (res.data.success) {
