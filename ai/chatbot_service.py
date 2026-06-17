@@ -4,9 +4,9 @@ from embedding_service import generate_embedding
 from vector_search import search
 from decision_engine import decide
 
-def chatbot(query):
+def get_response(query):
 
-    with open("embeddings.json") as f:
+    with open("data/embeddings.json") as f:
         data = json.load(f)
 
     query_embedding = generate_embedding(query)
@@ -15,8 +15,15 @@ def chatbot(query):
 
     action = decide(score)
 
+    # Default response
+    response = "Sorry, I don't understand."
+
+    # If a match is found
+    if match and "responses" in match:
+        response = random.choice(match["responses"])
+
     return {
+        "response": response,
         "action": action,
-        "score": score,
-        "answer": match["answer"]
+        "score": score
     }
