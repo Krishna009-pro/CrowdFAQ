@@ -5,7 +5,7 @@ const Answer = require("../models/Answer");
 const {
   generateEmbedding,
   generateProvisionalDraft,
-} = require("../services/openaiService");
+} = require("../services/aiService");
 
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 200;
@@ -249,10 +249,10 @@ const createQuestion = async (req, res, next) => {
     let embedding = [];
     try {
       embedding = await generateEmbedding(`${title} ${body}`);
-    } catch (openAiError) {
+    } catch (aiError) {
       console.warn(
-        "OpenAI Embedding failed during question creation. Saving without embedding.",
-        openAiError.message
+        "Gemini embedding failed during question creation. Saving without embedding.",
+        aiError.message
       );
     }
 
@@ -340,7 +340,7 @@ const getQuestions = async (req, res, next) => {
           ],
         },
       },
-      { $unwind: { path: "$author", preserveNullAndEmpty: true } },
+      { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           embedding:    0, // never send embedding to clients
