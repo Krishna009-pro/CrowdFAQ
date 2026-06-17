@@ -1,5 +1,5 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FaqAssistant } from "@/components/FaqAssistant";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthContextProvider } from "@/context/AuthContext";
@@ -38,6 +38,7 @@ function App() {
             <Route path="/admin/moderation" element={<Moderation />} />
             <Route path="/admin/users" element={<AdminDashboard />} />
             <Route path="/admin/questions" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<Navigate to="/analytics" replace />} />
             <Route path="/admin/settings" element={<AdminDashboard />} />
             <Route path="/analytics" element={<Analytics />} />
           </Routes>
