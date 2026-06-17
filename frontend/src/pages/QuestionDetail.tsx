@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export default function QuestionDetail() {
   const { slug } = useParams();
   const { user } = useAuth();
-  
+
   const [q, setQ] = useState<any>(null);
   const [qAnswers, setQAnswers] = useState<any[]>([]);
   const [related, setRelated] = useState<any[]>([]);
@@ -95,6 +95,27 @@ export default function QuestionDetail() {
     }
   };
 
+  // Vote on Question
+  const handleQuestionVote = async (type: "up" | "down") => {
+    if (!q) return;
+    try {
+      const res = await api.post(`/questions/${q._id || q.id}/vote`, { type });
+      if (res.data.success) {
+        toast.success(`Voted ${type} successfully.`);
+        setQ((current: any) => {
+          if (!current) return null;
+          return {
+            ...current,
+            upvoteCount: res.data.data.question.upvoteCount,
+            downvoteCount: res.data.data.question.downvoteCount,
+          };
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || `Failed to cast vote on question.`);
+    }
+  };
+
   // Accept Answer
   const handleAccept = async (answerId: string) => {
     try {
@@ -134,14 +155,14 @@ export default function QuestionDetail() {
 
   const qAuthorId = typeof q.author === "object" && q.author !== null ? (q.author._id || q.author.id) : q.author;
   const isQuestionAuthor = user && (user._id === qAuthorId || user.id === qAuthorId || user.role === "admin" || user.role === "moderator");
-  
+
   const qAuthor = typeof q.author === "object" && q.author !== null
     ? {
-        name: q.author.displayName || "Unknown User",
-        avatar: q.author.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(q.author.displayName || "U")}`,
-        title: q.author.title || q.author.role || "Contributor",
-        reputation: q.author.reputationScore || 0,
-      }
+      name: q.author.displayName || "Unknown User",
+      avatar: q.author.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(q.author.displayName || "U")}`,
+      title: q.author.title || q.author.role || "Contributor",
+      reputation: q.author.reputationScore || 0,
+    }
     : userById(q.author);
 
   const votesCount = q.upvoteCount !== undefined ? q.upvoteCount : (q.votes || 0);
@@ -197,7 +218,11 @@ export default function QuestionDetail() {
       <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-10 grid lg:grid-cols-12 gap-10">
         <article className="lg:col-span-8">
           <div className="flex gap-6">
-            <VoteColumn count={votesCount} testid={`vote-question-${q._id || q.id}`} />
+            <VoteColumn
+              count={votesCount}
+              testid={`vote-question-${q._id || q.id}`}
+              onVote={(type) => handleQuestionVote(type)}
+            />
             <div className="flex-1">
               <p className="text-brand-body text-base md:text-lg leading-relaxed mb-6 whitespace-pre-wrap">{q.body}</p>
               <div className="flex flex-wrap gap-2 mb-6">
@@ -221,15 +246,24 @@ export default function QuestionDetail() {
               {qAnswers.map((a) => {
                 const isAccepted = a.isAccepted !== undefined ? a.isAccepted : a.accepted;
                 const answerVotes = a.upvoteCount !== undefined ? a.upvoteCount : (a.votes || 0);
-
-                const u = typeof a.author === "object" && a.author !== null
+                const isAI = a.aiGenerated || !a.author;
+                const u = isAI
                   ? {
+                    name: "AI Assistant",
+                    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=FAQAssistant",
+                    title: "FAQ Bot",
+                    reputation: 9999,
+                  }
+                  : typeof a.author === "object" && a.author !== null
+                    ? {
                       name: a.author.displayName || "Unknown User",
                       avatar: a.author.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(a.author.displayName || "U")}`,
                       title: a.author.title || a.author.role || "Contributor",
                       reputation: a.author.reputationScore || 0,
                     }
-                  : userById(a.author);
+                    : userById(a.author);
+
+                const aAuthorId = isAI ? null : (typeof a.author === "object" && a.author !== null ? (a.author._id || a.author.id) : a.author);
 
                 return (
                   <div key={a._id || a.id} className={`p-6 md:p-8 ${isAccepted ? 'border-l-4 border-brand-blue bg-[#F4F7FA]' : 'border-l border-brand-line'}`} data-testid={`answer-${a._id || a.id}`}>
@@ -244,22 +278,32 @@ export default function QuestionDetail() {
                         <span className="font-sans font-semibold text-2xl text-brand-ink leading-none my-1">{answerVotes}</span>
                         <button onClick={() => handleVote(a._id, "down")} className="text-brand-mute hover:text-brand-vermilion p-1"><ChevronDown size={22} strokeWidth={1.5} /></button>
                       </div>
-                      
+
                       <div className="flex-1">
                         <p className="text-brand-body text-base leading-relaxed whitespace-pre-wrap">{a.body}</p>
                         <div className="flex flex-wrap items-center justify-between mt-6 pt-4 border-t border-brand-line gap-4">
                           <div className="flex items-center gap-3">
-                            <Link to={`/profile/${a.author._id || a.author.id || a.author}`}>
-                              <img src={u.avatar} alt="" className="w-9 h-9 object-cover rounded-full hover:opacity-80 transition-opacity" />
-                            </Link>
-                            <div>
-                              <Link to={`/profile/${a.author._id || a.author.id || a.author}`} className="hover:underline">
-                                <p className="text-sm text-brand-ink font-medium">{u.name}</p>
+                            {isAI ? (
+                              <img src={u.avatar} alt="" className="w-9 h-9 object-cover rounded-full" />
+                            ) : (
+                              <Link to={`/profile/${aAuthorId}`}>
+                                <img src={u.avatar} alt="" className="w-9 h-9 object-cover rounded-full hover:opacity-80 transition-opacity" />
                               </Link>
-                              <p className="text-[10px] uppercase tracking-widest text-brand-mute">{u.reputation.toLocaleString()} rep · {timeAgo(a.createdAt)}</p>
+                            )}
+                            <div>
+                              {isAI ? (
+                                <p className="text-sm text-brand-ink font-medium">{u.name}</p>
+                              ) : (
+                                <Link to={`/profile/${aAuthorId}`} className="hover:underline">
+                                  <p className="text-sm text-brand-ink font-medium">{u.name}</p>
+                                </Link>
+                              )}
+                              <p className="text-[10px] uppercase tracking-widest text-brand-mute">
+                                {isAI ? "Provisional Answer" : `${u.reputation.toLocaleString()} rep`} · {timeAgo(a.createdAt)}
+                              </p>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-brand-mute">
                             {isQuestionAuthor && !isAccepted && (
                               <button onClick={() => handleAccept(a._id)} className="text-[#00684A] font-bold hover:underline">
@@ -297,7 +341,7 @@ export default function QuestionDetail() {
                   const relatedSlug = r.slug || r._id;
                   const relatedVotes = r.upvoteCount !== undefined ? r.upvoteCount : (r.votes || 0);
                   const relatedAnswers = r.answerCount !== undefined ? r.answerCount : (r.answers || 0);
-                  
+
                   return (
                     <li key={r._id || r.id}>
                       <Link to={`/q/${relatedSlug}`} className="block py-4 group" data-testid={`related-${r._id || r.id}`}>
@@ -310,7 +354,7 @@ export default function QuestionDetail() {
               </ul>
             </div>
           )}
-          
+
           <div className="border border-brand-line bg-white p-6">
             <p className="label-eyebrow mb-4">About the asker</p>
             <div className="flex items-center gap-3 mb-3">
@@ -335,10 +379,10 @@ export default function QuestionDetail() {
   );
 }
 
-const VoteColumn = ({ count, testid }: { count: number; testid: string }) => (
+const VoteColumn = ({ count, testid, onVote }: { count: number; testid: string; onVote: (type: "up" | "down") => void }) => (
   <div className="flex flex-col items-center w-12 shrink-0" data-testid={testid}>
-    <button className="text-brand-mute hover:text-brand-ink p-1"><ChevronUp size={22} strokeWidth={1.5} /></button>
+    <button onClick={() => onVote("up")} className="text-brand-mute hover:text-brand-ink p-1"><ChevronUp size={22} strokeWidth={1.5} /></button>
     <span className="font-sans font-semibold text-3xl text-brand-ink leading-none my-1">{count}</span>
-    <button className="text-brand-mute hover:text-brand-vermilion p-1"><ChevronDown size={22} strokeWidth={1.5} /></button>
+    <button onClick={() => onVote("down")} className="text-brand-mute hover:text-brand-vermilion p-1"><ChevronDown size={22} strokeWidth={1.5} /></button>
   </div>
 );

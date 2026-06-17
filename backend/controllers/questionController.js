@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const Question = require("../models/Question");
 const Answer = require("../models/Answer");
+const User = require("../models/User");
 const {
   generateEmbedding,
   generateProvisionalDraft,
@@ -231,7 +232,7 @@ const createAiDraftForQuestion = async (question) => {
  */
 const createQuestion = async (req, res, next) => {
   try {
-    const { title, body, tags = [] } = req.body;
+    const { title, body, tags = [], category } = req.body;
     const authorId = req.user._id;
 
     if (!title || !body) {
@@ -262,6 +263,7 @@ const createQuestion = async (req, res, next) => {
       author: authorId,
       tags:   normalizedTags,
       embedding,
+      category,
     });
 
     const responseQuestion = question.toObject();
@@ -545,6 +547,141 @@ const deleteQuestion = async (req, res, next) => {
   }
 };
 
+// ─── Voting Helpers ─────────────────────────────────────────────────────────
+const idsEqual = (left, right) =>
+  left !== null &&
+  left !== undefined &&
+  right !== null &&
+  right !== undefined &&
+  String(left) === String(right);
+
+const hasUserVoted = (votes = [], userId) =>
+  votes.some((voteUserId) => idsEqual(voteUserId, userId));
+
+const ensureVoteArray = (question, field) => {
+  if (!question[field]) {
+    question[field] = [];
+  }
+  return question[field];
+};
+
+const addVote = (question, field, userId) => {
+  const votes = ensureVoteArray(question, field);
+  if (typeof votes.addToSet === "function") {
+    votes.addToSet(userId);
+  } else {
+    if (!hasUserVoted(votes, userId)) {
+      votes.push(userId);
+    }
+  }
+};
+
+const pullVote = (question, field, userId) => {
+  const votes = ensureVoteArray(question, field);
+  if (typeof votes.pull === "function") {
+    votes.pull(userId);
+  } else {
+    question[field] = votes.filter((voteUserId) => !idsEqual(voteUserId, userId));
+  }
+};
+
+/**
+ * POST /api/v1/questions/:id/vote
+ * Upvote or downvote a question.
+ */
+const voteQuestion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.body;
+    const voterId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Question id must be a valid MongoDB ObjectId" },
+      });
+    }
+
+    if (!["up", "down"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Vote type must be either 'up' or 'down'" },
+      });
+    }
+
+    const question = await Question.findById(id).select("+upvotedBy +downvotedBy");
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Question not found" },
+      });
+    }
+
+    const hasUpvoted = hasUserVoted(ensureVoteArray(question, "upvotedBy"), voterId);
+    const hasDownvoted = hasUserVoted(ensureVoteArray(question, "downvotedBy"), voterId);
+
+    if ((type === "up" && hasUpvoted) || (type === "down" && hasDownvoted)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "User has already cast this vote" },
+      });
+    }
+
+    let reputationDelta = 0;
+    if (type === "up") {
+      addVote(question, "upvotedBy", voterId);
+      question.upvoteCount += 1;
+
+      if (hasDownvoted) {
+        pullVote(question, "downvotedBy", voterId);
+        question.downvoteCount = Math.max(question.downvoteCount - 1, 0);
+      }
+      reputationDelta = 2; // Upvote on question gives 2 reputation points to author
+    } else {
+      addVote(question, "downvotedBy", voterId);
+      question.downvoteCount += 1;
+
+      if (hasUpvoted) {
+        pullVote(question, "upvotedBy", voterId);
+        question.upvoteCount = Math.max(question.upvoteCount - 1, 0);
+        reputationDelta = -2;
+      }
+    }
+
+    await question.save();
+
+    if (reputationDelta !== 0 && question.author) {
+      await User.findByIdAndUpdate(question.author, {
+        $inc: { reputationScore: reputationDelta },
+      });
+    }
+
+    // Emit event via Socket.IO
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("question_status_updated", {
+        questionId: question._id,
+        upvoteCount: question.upvoteCount,
+        downvoteCount: question.downvoteCount,
+      });
+    }
+
+    const responseQuestion = question.toObject();
+    delete responseQuestion.embedding;
+    delete responseQuestion.upvotedBy;
+    delete responseQuestion.downvotedBy;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        question: responseQuestion,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -553,4 +690,5 @@ module.exports = {
   getQuestionById,
   editQuestion,
   deleteQuestion,
+  voteQuestion,
 };

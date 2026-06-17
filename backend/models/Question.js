@@ -95,6 +95,21 @@ const questionSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+    category: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    upvotedBy: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+      select: false,
+    },
+    downvotedBy: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+      select: false,
+    },
   },
   {
     timestamps: true,
