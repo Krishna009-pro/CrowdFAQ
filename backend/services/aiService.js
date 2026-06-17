@@ -158,6 +158,7 @@ module.exports = {
   generateEmbedding: generateGeminiEmbedding,
   generateGeminiEmbedding,
   generateProvisionalDraft,
+  getGenerativeModel,
   summarizeAnswers,
   suggestTagsAndCategory,
 };

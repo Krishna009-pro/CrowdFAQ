@@ -1,17 +1,20 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
-import { Bot, Loader2, MessageCircle, Send, User, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, ExternalLink, Loader2, MessageCircle, Send, User, X } from "lucide-react";
 
 type ChatRole = "assistant" | "user";
+
+type Citation = {
+  id?: string;
+  title?: string;
+};
 
 type ChatMessage = {
   id: string;
   role: ChatRole;
   text: string;
-  matches?: Array<{
-    _id?: string;
-    title?: string;
-    score?: number;
-  }>;
+  citations?: Citation[];
+  // legacy
+  matches?: Citation[];
 };
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
@@ -30,13 +33,20 @@ export const FaqAssistant = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([starterMessage]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const trimmedInput = input.trim();
   const canSend = trimmedInput.length > 0 && !loading;
 
-  const recentMatches = useMemo(() => {
-    const assistantMessages = messages.filter((message) => message.role === "assistant");
-    return assistantMessages[assistantMessages.length - 1]?.matches?.slice(0, 2) || [];
+  // Auto-scroll to latest message
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  const recentCitations = useMemo(() => {
+    const assistantMessages = messages.filter((m) => m.role === "assistant");
+    const last = assistantMessages[assistantMessages.length - 1];
+    return (last?.citations ?? last?.matches ?? []).slice(0, 3);
   }, [messages]);
 
   const toggleOpen = () => {
@@ -62,11 +72,16 @@ export const FaqAssistant = () => {
     setLoading(true);
 
     try {
+      // Build history from current messages for multi-turn RAG
+      const history = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ role: m.role, text: m.text }));
+
       const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: trimmedInput }),
+        body: JSON.stringify({ message: trimmedInput, history }),
       });
 
       const payload = await response.json();
@@ -81,7 +96,7 @@ export const FaqAssistant = () => {
           id: buildId(),
           role: "assistant",
           text: payload.data.answer,
-          matches: payload.data.matches || [],
+          citations: payload.data.citations || payload.data.matches || [],
         },
       ]);
     } catch (error) {
@@ -165,16 +180,18 @@ export const FaqAssistant = () => {
                 Searching
               </div>
             )}
+            <div ref={bottomRef} />
           </div>
 
-          {recentMatches.length > 0 && (
+          {recentCitations.length > 0 && (
             <div className="border-t border-brand-line bg-white px-4 py-3">
-              <p className="label-eyebrow mb-2">Related</p>
+              <p className="label-eyebrow mb-2">Sources</p>
               <div className="space-y-1.5">
-                {recentMatches.map((match) => (
-                  <p key={match._id || match.title} className="truncate text-xs text-brand-body">
-                    {match.title}
-                  </p>
+                {recentCitations.map((c, i) => (
+                  <div key={c.id || i} className="flex items-start gap-1.5 text-xs text-brand-body">
+                    <ExternalLink size={11} className="mt-0.5 shrink-0 text-brand-mute" />
+                    <span className="truncate">{c.title}</span>
+                  </div>
                 ))}
               </div>
             </div>

@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const Answer = require("../models/Answer");
 const Question = require("../models/Question");
+const { ragChat } = require("../services/ragService");
 const {
-  generateChatbotAnswer,
   generateEmbedding,
   summarizeAnswers,
 } = require("../services/aiService");
@@ -178,6 +178,8 @@ const buildFallbackAnswer = (matches) => {
 const askChatbot = async (req, res, next) => {
   try {
     const message = String(req.body.message || req.body.query || "").trim();
+    // history: [{role: "user"|"assistant", text: string}]
+    const history = Array.isArray(req.body.history) ? req.body.history : [];
 
     if (!message) {
       return res.status(400).json({
@@ -186,32 +188,18 @@ const askChatbot = async (req, res, next) => {
       });
     }
 
-    const { aiFallback, fallbackReason, matches } = await findSimilarQuestions(message, {
-      limit: 3,
-    });
-
-    let answer;
-    let responseFallback = aiFallback;
-    let responseFallbackReason = fallbackReason;
-
-    try {
-      answer = await generateChatbotAnswer({
-        query: message,
-        contextText: buildContextText(matches),
-      });
-    } catch (error) {
-      responseFallback = true;
-      responseFallbackReason = responseFallbackReason || error.message;
-      answer = buildFallbackAnswer(matches);
-    }
+    const { answer, citations, meta } = await ragChat(message, history);
 
     return res.status(200).json({
       success: true,
       data: {
         answer,
-        matches,
-        aiFallback: responseFallback,
-        fallbackReason: responseFallback ? responseFallbackReason : null,
+        citations,
+        meta,
+        // legacy field kept for backward compat
+        matches: citations,
+        aiFallback: !meta.hasContext,
+        fallbackReason: !meta.hasContext ? "No relevant documents found" : null,
       },
     });
   } catch (error) {
