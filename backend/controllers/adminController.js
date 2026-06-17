@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Answer = require("../models/Answer");
 const Question = require("../models/Question");
 const User = require("../models/User");
+const Report = require("../models/Report");
 
 const VALID_QUESTION_STATUSES = [
   "pending",
@@ -64,6 +65,7 @@ const getAdminStats = async (req, res, next) => {
       totalQuestions,
       totalAnswers,
       totalOfficialAnswers,
+      totalPendingReports,
       userRoleBreakdown,
       questionStatusBreakdown,
     ] = await Promise.all([
@@ -71,6 +73,7 @@ const getAdminStats = async (req, res, next) => {
       Question.countDocuments({}),
       Answer.countDocuments({}),
       Answer.countDocuments({ isOfficial: true }),
+      Report.countDocuments({ status: "pending" }),
       User.aggregate([
         { $group: { _id: "$role", count: { $sum: 1 } } },
       ]),
@@ -87,6 +90,7 @@ const getAdminStats = async (req, res, next) => {
           questions: totalQuestions,
           answers: totalAnswers,
           officialAnswers: totalOfficialAnswers,
+          pendingReports: totalPendingReports,
         },
         usersByRole: userRoleBreakdown.reduce((acc, item) => {
           acc[item._id] = item.count;
@@ -510,6 +514,99 @@ const deleteAnswer = async (req, res, next) => {
   }
 };
 
+const getAdminReports = async (req, res, next) => {
+  try {
+    const filter = {};
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    const reports = await Report.find(filter)
+      .populate("reporter", "displayName email role avatar")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const populatedReports = await Promise.all(
+      reports.map(async (report) => {
+        let targetDoc = null;
+        if (report.type === "question") {
+          targetDoc = await Question.findById(report.target)
+            .select("title slug body")
+            .lean();
+        } else if (report.type === "answer") {
+          targetDoc = await Answer.findById(report.target)
+            .select("body question")
+            .populate("question", "title slug")
+            .lean();
+        }
+        return {
+          ...report,
+          targetDetail: targetDoc,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        reports: populatedReports,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateReportStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "Report id must be a valid MongoDB ObjectId",
+        },
+      });
+    }
+
+    const validStatuses = ["pending", "approved", "rejected", "resolved"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "Status must be one of: pending, approved, rejected, resolved",
+        },
+      });
+    }
+
+    const report = await Report.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate("reporter", "displayName email role avatar");
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: "Report not found",
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        report,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   getAdminStats,
   getAdminUsers,
@@ -520,4 +617,6 @@ module.exports = {
   getAdminAnswers,
   updateAnswerOfficialStatus,
   deleteAnswer,
+  getAdminReports,
+  updateReportStatus,
 };

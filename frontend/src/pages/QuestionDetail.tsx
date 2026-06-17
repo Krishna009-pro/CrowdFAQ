@@ -1,14 +1,151 @@
 import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { PageShell } from "@/components/layout/PageShell";
-import { questions, questionBySlug, answers, userById, timeAgo } from "@/lib/mockData";
-import { ChevronUp, ChevronDown, ShieldCheck, MessageSquare, Eye, Share2, Bookmark, Flag, Check } from "lucide-react";
+import { userById, timeAgo } from "@/lib/mockData";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
+import { ChevronUp, ChevronDown, ShieldCheck, MessageSquare, Eye, Share2, Bookmark, Flag, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function QuestionDetail() {
   const { slug } = useParams();
-  const q = questionBySlug(slug) || questions[0];
-  const author = userById(q.author);
-  const qAnswers = answers[q.id] || answers["q-001"];
-  const related = questions.filter((qq) => qq.category === q.category && qq.id !== q.id).slice(0, 4);
+  const { user } = useAuth();
+  
+  const [q, setQ] = useState<any>(null);
+  const [qAnswers, setQAnswers] = useState<any[]>([]);
+  const [related, setRelated] = useState<any[]>([]);
+  const [answerInput, setAnswerInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
+
+  // Fetch question and answers
+  const fetchQuestionDetails = async () => {
+    if (!slug) return;
+    setLoading(true);
+    try {
+      const res = await api.get(`/questions/${slug}`);
+      if (res.data.success && res.data.data.question) {
+        const questionData = res.data.data.question;
+        setQ(questionData);
+        setQAnswers(questionData.answers || []);
+
+        // Fetch related questions based on the first tag of this question
+        if (questionData.tags && questionData.tags.length > 0) {
+          const relatedRes = await api.get("/questions", {
+            params: { tag: questionData.tags[0], limit: 10 }
+          });
+          if (relatedRes.data.success && relatedRes.data.data.questions) {
+            setRelated(
+              relatedRes.data.data.questions
+                .filter((item: any) => item._id !== questionData._id)
+                .slice(0, 4)
+            );
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to load question details:", err);
+      toast.error(err.response?.data?.error?.message || "Failed to load question details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestionDetails();
+  }, [slug]);
+
+  // Submit Answer
+  const handlePostAnswer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!answerInput.trim() || !q) return;
+
+    setSubmittingAnswer(true);
+    try {
+      const res = await api.post("/answers", {
+        questionId: q._id || q.id,
+        body: answerInput.trim(),
+      });
+      if (res.data.success) {
+        toast.success("Answer posted successfully.");
+        setAnswerInput("");
+        // Refresh question details to display new answer
+        await fetchQuestionDetails();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Failed to post answer. Make sure you are signed in.");
+    } finally {
+      setSubmittingAnswer(false);
+    }
+  };
+
+  // Vote on Answer
+  const handleVote = async (answerId: string, type: "up" | "down") => {
+    try {
+      const res = await api.post(`/answers/${answerId}/vote`, { type });
+      if (res.data.success) {
+        toast.success(`Voted ${type} successfully.`);
+        // Update vote locally
+        setQAnswers((current) =>
+          current.map((a) => (a._id === answerId ? { ...a, ...res.data.data.answer } : a))
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || `Failed to cast vote.`);
+    }
+  };
+
+  // Accept Answer
+  const handleAccept = async (answerId: string) => {
+    try {
+      const res = await api.patch(`/answers/${answerId}/accept`);
+      if (res.data.success) {
+        toast.success("Answer accepted.");
+        // Refresh to show accepted status
+        await fetchQuestionDetails();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Failed to accept answer.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageShell>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+          <Loader2 className="animate-spin text-brand-blue" size={32} />
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-mute">Loading entry details...</p>
+        </div>
+      </PageShell>
+    );
+  }
+
+  if (!q) {
+    return (
+      <PageShell>
+        <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+          <h1 className="font-serif text-4xl mb-4 text-brand-ink">Question Not Found</h1>
+          <p className="text-brand-body mb-8">This question may have been deleted or the link is incorrect.</p>
+          <Link to="/" className="bg-brand-ink text-brand-paper px-6 py-3 text-sm">Back to feed</Link>
+        </div>
+      </PageShell>
+    );
+  }
+
+  const qAuthorId = typeof q.author === "object" && q.author !== null ? (q.author._id || q.author.id) : q.author;
+  const isQuestionAuthor = user && (user._id === qAuthorId || user.id === qAuthorId || user.role === "admin" || user.role === "moderator");
+  
+  const qAuthor = typeof q.author === "object" && q.author !== null
+    ? {
+        name: q.author.displayName || "Unknown User",
+        avatar: q.author.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(q.author.displayName || "U")}`,
+        title: q.author.title || q.author.role || "Contributor",
+        reputation: q.author.reputationScore || 0,
+      }
+    : userById(q.author);
+
+  const votesCount = q.upvoteCount !== undefined ? q.upvoteCount : (q.votes || 0);
+  const viewsCount = q.views || 0;
 
   return (
     <PageShell>
@@ -17,7 +154,7 @@ export default function QuestionDetail() {
           <div className="flex items-center gap-3 mb-6 text-xs uppercase tracking-widest text-brand-body">
             <Link to="/" className="hover:text-brand-ink">Feed</Link>
             <span className="text-brand-mute">/</span>
-            <Link to={`/categories/${q.category}`} className="hover:text-brand-ink">{q.category}</Link>
+            <Link to={`/categories/${q.category || (q.tags && q.tags[0]) || "general"}`} className="hover:text-brand-ink">{q.category || (q.tags && q.tags[0]) || "general"}</Link>
             <span className="text-brand-mute">/</span>
             <span className="text-brand-mute truncate">Question</span>
           </div>
@@ -28,7 +165,7 @@ export default function QuestionDetail() {
                 <ShieldCheck size={11} /> Verified answer
               </span>
             )}
-            <span className="label-eyebrow">{q.category}</span>
+            <span className="label-eyebrow">{q.category || (q.tags && q.tags[0]) || "general"}</span>
           </div>
 
           <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-brand-ink leading-[1.05] tracking-tight max-w-4xl">
@@ -37,15 +174,19 @@ export default function QuestionDetail() {
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-6 text-sm">
             <div className="flex items-center gap-4">
-              <img src={author.avatar} alt={author.name} className="w-12 h-12 object-cover" />
+              <Link to={`/profile/${qAuthorId}`}>
+                <img src={qAuthor.avatar} alt={qAuthor.name} className="w-12 h-12 object-cover rounded-full hover:opacity-80 transition-opacity" />
+              </Link>
               <div>
-                <p className="text-brand-ink font-medium">{author.name}</p>
-                <p className="label-eyebrow">{author.title} · Asked {timeAgo(q.createdAt)}</p>
+                <Link to={`/profile/${qAuthorId}`} className="hover:underline">
+                  <p className="text-brand-ink font-medium">{qAuthor.name}</p>
+                </Link>
+                <p className="label-eyebrow">{qAuthor.title} · Asked {timeAgo(q.createdAt)}</p>
               </div>
             </div>
             <div className="flex items-center gap-5 text-brand-body">
-              <span className="flex items-center gap-2"><MessageSquare size={14} />{q.answers} answers</span>
-              <span className="flex items-center gap-2"><Eye size={14} />{q.views.toLocaleString()} views</span>
+              <span className="flex items-center gap-2"><MessageSquare size={14} />{qAnswers.length} answers</span>
+              <span className="flex items-center gap-2"><Eye size={14} />{viewsCount.toLocaleString()} views</span>
               <button className="flex items-center gap-2 hover:text-brand-ink" data-testid="share-btn"><Share2 size={14} />Share</button>
               <button className="flex items-center gap-2 hover:text-brand-ink" data-testid="bookmark-btn"><Bookmark size={14} />Save</button>
             </div>
@@ -56,11 +197,11 @@ export default function QuestionDetail() {
       <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-10 grid lg:grid-cols-12 gap-10">
         <article className="lg:col-span-8">
           <div className="flex gap-6">
-            <VoteColumn count={q.votes} testid={`vote-question-${q.id}`} />
+            <VoteColumn count={votesCount} testid={`vote-question-${q._id || q.id}`} />
             <div className="flex-1">
-              <p className="text-brand-body text-base md:text-lg leading-relaxed mb-6">{q.body}</p>
+              <p className="text-brand-body text-base md:text-lg leading-relaxed mb-6 whitespace-pre-wrap">{q.body}</p>
               <div className="flex flex-wrap gap-2 mb-6">
-                {q.tags.map((t) => (
+                {q.tags.map((t: string) => (
                   <Link key={t} to={`/search?q=${t}`} className="text-xs px-3 py-1.5 border border-brand-line text-brand-body uppercase tracking-wider hover:border-brand-ink">#{t}</Link>
                 ))}
               </div>
@@ -74,37 +215,57 @@ export default function QuestionDetail() {
           <div className="mt-12">
             <div className="flex items-end justify-between border-b border-brand-line pb-3 mb-6">
               <h2 className="font-serif text-3xl md:text-4xl tracking-tight text-brand-ink">{qAnswers.length} Answers</h2>
-              <select className="text-xs uppercase tracking-widest bg-transparent border-b border-brand-line py-1 outline-none" data-testid="answers-sort">
-                <option>Sort: Highest voted</option>
-                <option>Sort: Newest</option>
-                <option>Sort: Oldest</option>
-              </select>
             </div>
 
             <div className="space-y-10">
               {qAnswers.map((a) => {
-                const u = userById(a.author);
+                const isAccepted = a.isAccepted !== undefined ? a.isAccepted : a.accepted;
+                const answerVotes = a.upvoteCount !== undefined ? a.upvoteCount : (a.votes || 0);
+
+                const u = typeof a.author === "object" && a.author !== null
+                  ? {
+                      name: a.author.displayName || "Unknown User",
+                      avatar: a.author.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(a.author.displayName || "U")}`,
+                      title: a.author.title || a.author.role || "Contributor",
+                      reputation: a.author.reputationScore || 0,
+                    }
+                  : userById(a.author);
+
                 return (
-                  <div key={a.id} className={`p-6 md:p-8 ${a.accepted ? 'border-l-4 border-brand-blue bg-[#F4F7FA]' : 'border-l border-brand-line'}`} data-testid={`answer-${a.id}`}>
-                    {a.accepted && (
+                  <div key={a._id || a.id} className={`p-6 md:p-8 ${isAccepted ? 'border-l-4 border-brand-blue bg-[#F4F7FA]' : 'border-l border-brand-line'}`} data-testid={`answer-${a._id || a.id}`}>
+                    {isAccepted && (
                       <div className="flex items-center gap-2 mb-4 text-brand-blue text-[10px] uppercase tracking-widest font-bold">
                         <Check size={13} strokeWidth={2.5} /> Accepted answer
                       </div>
                     )}
                     <div className="flex gap-6">
-                      <VoteColumn count={a.votes} testid={`vote-answer-${a.id}`} />
+                      <div className="flex flex-col items-center w-12 shrink-0">
+                        <button onClick={() => handleVote(a._id, "up")} className="text-brand-mute hover:text-brand-ink p-1"><ChevronUp size={22} strokeWidth={1.5} /></button>
+                        <span className="font-sans font-semibold text-2xl text-brand-ink leading-none my-1">{answerVotes}</span>
+                        <button onClick={() => handleVote(a._id, "down")} className="text-brand-mute hover:text-brand-vermilion p-1"><ChevronDown size={22} strokeWidth={1.5} /></button>
+                      </div>
+                      
                       <div className="flex-1">
-                        <p className="text-brand-body text-base leading-relaxed">{a.body}</p>
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-brand-line">
+                        <p className="text-brand-body text-base leading-relaxed whitespace-pre-wrap">{a.body}</p>
+                        <div className="flex flex-wrap items-center justify-between mt-6 pt-4 border-t border-brand-line gap-4">
                           <div className="flex items-center gap-3">
-                            <img src={u.avatar} alt="" className="w-9 h-9 object-cover" />
+                            <Link to={`/profile/${a.author._id || a.author.id || a.author}`}>
+                              <img src={u.avatar} alt="" className="w-9 h-9 object-cover rounded-full hover:opacity-80 transition-opacity" />
+                            </Link>
                             <div>
-                              <p className="text-sm text-brand-ink">{u.name}</p>
+                              <Link to={`/profile/${a.author._id || a.author.id || a.author}`} className="hover:underline">
+                                <p className="text-sm text-brand-ink font-medium">{u.name}</p>
+                              </Link>
                               <p className="text-[10px] uppercase tracking-widest text-brand-mute">{u.reputation.toLocaleString()} rep · {timeAgo(a.createdAt)}</p>
                             </div>
                           </div>
-                          <div className="flex gap-3 text-xs uppercase tracking-widest text-brand-mute">
-                            <button className="hover:text-brand-ink">Reply</button>
+                          
+                          <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-brand-mute">
+                            {isQuestionAuthor && !isAccepted && (
+                              <button onClick={() => handleAccept(a._id)} className="text-[#00684A] font-bold hover:underline">
+                                Accept Answer
+                              </button>
+                            )}
                             <button className="hover:text-brand-ink">Share</button>
                           </div>
                         </div>
@@ -115,42 +276,57 @@ export default function QuestionDetail() {
               })}
             </div>
 
-            <div className="mt-12 border-t border-brand-line pt-8">
+            <form onSubmit={handlePostAnswer} className="mt-12 border-t border-brand-line pt-8">
               <h3 className="font-serif text-2xl text-brand-ink mb-4">Your answer</h3>
-              <textarea rows={5} placeholder="Write a clear, sourced answer. Avoid pleasantries. Get to the point." className="w-full border border-brand-line bg-white p-4 text-base outline-none focus:border-brand-ink resize-y" data-testid="answer-input" />
+              <textarea rows={5} value={answerInput} onChange={(e) => setAnswerInput(e.target.value)} required disabled={submittingAnswer} placeholder="Write a clear, sourced answer. Avoid pleasantries. Get to the point." className="w-full border border-brand-line bg-white p-4 text-base outline-none focus:border-brand-ink resize-y" data-testid="answer-input" />
               <div className="flex justify-end mt-4">
-                <button className="bg-brand-ink text-brand-paper px-6 py-3 text-sm tracking-wide hover:bg-brand-blue" data-testid="post-answer-btn">Post your answer</button>
+                <button type="submit" disabled={submittingAnswer || !answerInput.trim()} className="bg-brand-ink text-brand-paper px-6 py-3 text-sm tracking-wide hover:bg-brand-blue disabled:opacity-50" data-testid="post-answer-btn">
+                  {submittingAnswer ? "Posting..." : "Post your answer"}
+                </button>
               </div>
-            </div>
+            </form>
           </div>
         </article>
 
         <aside className="lg:col-span-4 space-y-6">
-          <div className="border border-brand-line bg-white p-6">
-            <p className="label-eyebrow mb-4">Related questions</p>
-            <ul className="divide-y divide-brand-line">
-              {related.map((r) => (
-                <li key={r.id}>
-                  <Link to={`/q/${r.slug}`} className="block py-4 group" data-testid={`related-${r.id}`}>
-                    <p className="font-serif text-lg text-brand-ink leading-snug group-hover:text-brand-blue mb-1">{r.title}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-brand-mute">{r.answers} answers · {r.votes} votes</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {related.length > 0 && (
+            <div className="border border-brand-line bg-white p-6">
+              <p className="label-eyebrow mb-4">Related questions</p>
+              <ul className="divide-y divide-brand-line">
+                {related.map((r) => {
+                  const relatedSlug = r.slug || r._id;
+                  const relatedVotes = r.upvoteCount !== undefined ? r.upvoteCount : (r.votes || 0);
+                  const relatedAnswers = r.answerCount !== undefined ? r.answerCount : (r.answers || 0);
+                  
+                  return (
+                    <li key={r._id || r.id}>
+                      <Link to={`/q/${relatedSlug}`} className="block py-4 group" data-testid={`related-${r._id || r.id}`}>
+                        <p className="font-serif text-lg text-brand-ink leading-snug group-hover:text-brand-blue mb-1">{r.title}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-brand-mute">{relatedAnswers} answers · {relatedVotes} votes</p>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+          
           <div className="border border-brand-line bg-white p-6">
             <p className="label-eyebrow mb-4">About the asker</p>
             <div className="flex items-center gap-3 mb-3">
-              <img src={author.avatar} alt="" className="w-12 h-12 object-cover" />
+              <Link to={`/profile/${qAuthorId}`}>
+                <img src={qAuthor.avatar} alt="" className="w-12 h-12 object-cover rounded-full hover:opacity-80 transition-opacity" />
+              </Link>
               <div>
-                <p className="text-brand-ink">{author.name}</p>
-                <p className="text-xs text-brand-mute">{author.title}</p>
+                <Link to={`/profile/${qAuthorId}`} className="hover:underline">
+                  <p className="text-brand-ink">{qAuthor.name}</p>
+                </Link>
+                <p className="text-xs text-brand-mute">{qAuthor.title}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-px bg-brand-line border border-brand-line">
-              <div className="bg-white px-3 py-3"><p className="font-sans font-semibold text-2xl">{author.reputation.toLocaleString()}</p><p className="label-eyebrow text-[9px]">Reputation</p></div>
-              <div className="bg-white px-3 py-3"><p className="font-sans font-semibold text-2xl">{author.joined.split(' ')[1]}</p><p className="label-eyebrow text-[9px]">Member since</p></div>
+              <div className="bg-white px-3 py-3"><p className="font-sans font-semibold text-2xl">{qAuthor.reputation.toLocaleString()}</p><p className="label-eyebrow text-[9px]">Reputation</p></div>
+              <div className="bg-white px-3 py-3"><p className="font-sans font-semibold text-2xl">{q.createdAt ? new Date(q.createdAt).getFullYear() : '2026'}</p><p className="label-eyebrow text-[9px]">Asked Year</p></div>
             </div>
           </div>
         </aside>
@@ -159,7 +335,7 @@ export default function QuestionDetail() {
   );
 }
 
-const VoteColumn = ({ count, testid }) => (
+const VoteColumn = ({ count, testid }: { count: number; testid: string }) => (
   <div className="flex flex-col items-center w-12 shrink-0" data-testid={testid}>
     <button className="text-brand-mute hover:text-brand-ink p-1"><ChevronUp size={22} strokeWidth={1.5} /></button>
     <span className="font-sans font-semibold text-3xl text-brand-ink leading-none my-1">{count}</span>

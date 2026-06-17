@@ -214,12 +214,12 @@ const mockAnswers = {
 };
 
 const mockNotifications = [
-  { mockId: 'n1', type: 'answer', actorMockId: 'u1', targetMockId: 'q-001', read: false, text: 'Mira Halverson answered your question on IAM key rotation.' },
-  { mockId: 'n2', type: 'mention', actorMockId: 'u2', targetMockId: 'q-008', read: false, text: 'Daniel Okafor mentioned you in a comment on a PRD question.' },
-  { mockId: 'n3', type: 'accepted', actorMockId: 'u3', targetMockId: 'q-008', read: false, text: 'Your answer was accepted on "How do you write a PRD that engineers will read".' },
-  { mockId: 'n4', type: 'vote', actorMockId: 'u4', targetMockId: 'q-006', read: true, text: 'Your answer received 25 upvotes on a Postgres window function question.' },
-  { mockId: 'n5', type: 'system', actorMockId: null, targetMockId: null, read: true, text: 'You earned the "Curator" badge for editing 25 questions.' },
-  { mockId: 'n6', type: 'answer', actorMockId: 'u5', targetMockId: 'q-009', read: true, text: 'Priya Raghavan answered your question on GDPR log retention.' },
+  { mockId: 'n1', type: 'answer', actorMockId: 'u1', targetMockId: 'q-001', userMockId: 'u5', read: false, text: 'Mira Halverson answered your question on IAM key rotation.' },
+  { mockId: 'n2', type: 'mention', actorMockId: 'u2', targetMockId: 'q-008', userMockId: 'u3', read: false, text: 'Daniel Okafor mentioned you in a comment on a PRD question.' },
+  { mockId: 'n3', type: 'accepted', actorMockId: 'u3', targetMockId: 'q-008', userMockId: 'u1', read: false, text: 'Your answer was accepted on "How do you write a PRD that engineers will read".' },
+  { mockId: 'n4', type: 'vote', actorMockId: 'u4', targetMockId: 'q-006', userMockId: 'u1', read: true, text: 'Your answer received 25 upvotes on a Postgres window function question.' },
+  { mockId: 'n5', type: 'system', actorMockId: null, targetMockId: null, userMockId: 'u1', read: true, text: 'You earned the "Curator" badge for editing 25 questions.' },
+  { mockId: 'n6', type: 'answer', actorMockId: 'u5', targetMockId: 'q-009', userMockId: 'u1', read: true, text: 'Priya Raghavan answered your question on GDPR log retention.' },
 ];
 
 const mockReports = [
@@ -310,7 +310,9 @@ async function seedDatabase() {
     for (const n of mockNotifications) {
       const actor = n.actorMockId ? userMap[n.actorMockId] : null;
       const target = n.targetMockId ? questionMap[n.targetMockId] : null;
+      const userRecip = n.userMockId ? userMap[n.userMockId] : userMap['u1'];
       await Notification.create({
+        user: userRecip._id,
         type: n.type,
         actor: actor ? actor._id : null,
         target: target ? target._id : null,

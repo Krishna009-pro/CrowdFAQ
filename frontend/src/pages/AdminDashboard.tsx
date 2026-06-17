@@ -1,17 +1,94 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/layout/AdminShell";
-import { adminStats, activityChart, users, questions, timeAgo, userById } from "@/lib/mockData";
-import { ArrowUpRight, ArrowDownRight, MessageSquare, Users as UsersIcon, MessagesSquare, Flag, Download } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-
-const metrics = [
-  { k: "Questions", v: adminStats.totalQuestions.toLocaleString(), delta: "+12.4%", up: true, icon: MessageSquare },
-  { k: "Answers", v: adminStats.totalAnswers.toLocaleString(), delta: "+8.1%", up: true, icon: MessagesSquare },
-  { k: "Members", v: adminStats.totalUsers.toLocaleString(), delta: "+4.2%", up: true, icon: UsersIcon },
-  { k: "Flagged", v: adminStats.flagged.toString(), delta: "-22%", up: false, icon: Flag },
-];
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { ArrowUpRight, ArrowDownRight, MessageSquare, Users as UsersIcon, MessagesSquare, Flag, Download, Loader2 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { timeAgo, activityChart } from "@/lib/mockData";
+import { toast } from "sonner";
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<any>(null);
+  const [userList, setUserList] = useState<any[]>([]);
+  const [recentQs, setRecentQs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Redirect if not moderator/admin
+    if (user && user.role !== "admin" && user.role !== "moderator") {
+      toast.error("Access denied. Admin privileges required.");
+      navigate("/");
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [statsRes, usersRes, questionsRes] = await Promise.all([
+          api.get("/admin/stats"),
+          api.get("/admin/users"),
+          api.get("/questions", { params: { limit: 5 } }),
+        ]);
+
+        if (statsRes.data.success) {
+          setStats(statsRes.data.data);
+        }
+        if (usersRes.data.success) {
+          setUserList(usersRes.data.data.users || []);
+        }
+        if (questionsRes.data.success) {
+          setRecentQs(questionsRes.data.data.questions || []);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch admin dashboard data:", err);
+        toast.error(err.response?.data?.error?.message || "Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchData();
+    }
+  }, [user, navigate]);
+
+  if (loading) {
+    return (
+      <AdminShell eyebrow="Console / overview" title="Dashboard">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 bg-white border border-brand-line">
+          <Loader2 className="animate-spin text-brand-blue" size={32} />
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-mute">Loading dashboard console...</p>
+        </div>
+      </AdminShell>
+    );
+  }
+
+  if (!user || (user.role !== "admin" && user.role !== "moderator")) {
+    return (
+      <AdminShell eyebrow="Console / overview" title="Access Denied">
+        <div className="max-w-md mx-auto py-16 text-center">
+          <p className="text-brand-body mb-8">You do not have permission to view the administrator panel.</p>
+          <Link to="/" className="bg-brand-ink text-brand-paper px-6 py-3 text-sm">Back to Home</Link>
+        </div>
+      </AdminShell>
+    );
+  }
+
+  const totalQuestions = stats?.totals?.questions || 0;
+  const totalAnswers = stats?.totals?.answers || 0;
+  const totalUsers = stats?.totals?.users || 0;
+  const pendingReports = stats?.totals?.pendingReports || 0;
+
+  const metrics = [
+    { k: "Questions", v: totalQuestions.toLocaleString(), delta: "+12.4%", up: true, icon: MessageSquare },
+    { k: "Answers", v: totalAnswers.toLocaleString(), delta: "+8.1%", up: true, icon: MessagesSquare },
+    { k: "Members", v: totalUsers.toLocaleString(), delta: "+4.2%", up: true, icon: UsersIcon },
+    { k: "Flagged", v: pendingReports.toString(), delta: "-22%", up: false, icon: Flag },
+  ];
+
   return (
     <AdminShell
       eyebrow="Console / overview"
@@ -86,17 +163,27 @@ export default function AdminDashboard() {
             <Link to="/" className="text-xs uppercase tracking-widest text-brand-blue hover:text-brand-ink">View all →</Link>
           </div>
           <ul className="divide-y divide-brand-line">
-            {questions.slice(0, 5).map((q) => (
-              <li key={q.id} className="px-6 py-4 hover:bg-[#F9F9F8]">
-                <Link to={`/q/${q.slug}`} className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm text-brand-ink truncate font-medium">{q.title}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-brand-mute mt-1">{q.category} · {q.answers} answers · {timeAgo(q.createdAt)}</p>
-                  </div>
-                  <span className="text-xs tabular-nums shrink-0">{q.votes} ▲</span>
-                </Link>
-              </li>
-            ))}
+            {recentQs.slice(0, 5).map((q) => {
+              const qVotes = q.upvoteCount !== undefined ? q.upvoteCount : (q.votes || 0);
+              const qAnswers = q.answerCount !== undefined ? q.answerCount : (q.answers || 0);
+              
+              return (
+                <li key={q._id || q.id} className="px-6 py-4 hover:bg-[#F9F9F8]">
+                  <Link to={`/q/${q.slug || q._id}`} className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm text-brand-ink truncate font-medium">{q.title}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-brand-mute mt-1">
+                        {q.category || (q.tags && q.tags[0]) || "general"} · {qAnswers} answers · {timeAgo(q.createdAt)}
+                      </p>
+                    </div>
+                    <span className="text-xs tabular-nums shrink-0">{qVotes} ▲</span>
+                  </Link>
+                </li>
+              );
+            })}
+            {recentQs.length === 0 && (
+              <li className="px-6 py-4 text-center text-sm text-brand-mute">No questions found.</li>
+            )}
           </ul>
         </div>
 
@@ -106,16 +193,29 @@ export default function AdminDashboard() {
             <Link to="/admin/users" className="text-xs uppercase tracking-widest text-brand-blue hover:text-brand-ink">Manage →</Link>
           </div>
           <ul className="divide-y divide-brand-line">
-            {users.map((u) => (
-              <li key={u.id} className="px-6 py-3.5 flex items-center gap-3">
-                <img src={u.avatar} alt="" className="w-9 h-9 object-cover" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-brand-ink">{u.name}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-brand-mute">{u.title} · {u.joined}</p>
-                </div>
-                <span className="font-sans font-semibold text-base tabular-nums">{(u.reputation/1000).toFixed(1)}k</span>
-              </li>
-            ))}
+            {userList.slice(0, 5).map((u) => {
+              const uAvatar = u.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.displayName || "U")}`;
+              const rep = u.reputationScore !== undefined ? u.reputationScore : (u.reputation || 0);
+              const joinedString = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "";
+
+              return (
+                <li key={u._id || u.id} className="px-6 py-3.5 flex items-center gap-3">
+                  <img src={uAvatar} alt="" className="w-9 h-9 object-cover rounded-full border border-brand-line" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-brand-ink">{u.displayName}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-brand-mute">
+                      {u.title || u.role || "Contributor"} · {joinedString}
+                    </p>
+                  </div>
+                  <span className="font-sans font-semibold text-base tabular-nums">
+                    {rep >= 1000 ? `${(rep/1000).toFixed(1)}k` : rep}
+                  </span>
+                </li>
+              );
+            })}
+            {userList.length === 0 && (
+              <li className="px-6 py-4 text-center text-sm text-brand-mute">No members found.</li>
+            )}
           </ul>
         </div>
       </div>

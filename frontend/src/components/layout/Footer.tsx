@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 export const Footer = () => {
+  const { user } = useAuth();
+  const isAdminOrModerator = user?.role === "admin" || user?.role === "moderator";
+
   return (
     <footer className="border-t border-brand-line bg-brand-paper mt-20" data-testid="site-footer">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-16">
@@ -29,10 +33,14 @@ export const Footer = () => {
           </div>
 
           <div>
-            <p className="label-eyebrow mb-4">Admin</p>
+            <p className="label-eyebrow mb-4">Account</p>
             <ul className="space-y-2 text-sm text-brand-body">
-              <li><Link to="/admin" className="hover:text-brand-ink">Dashboard</Link></li>
-              <li><Link to="/admin/moderation" className="hover:text-brand-ink">Moderation</Link></li>
+              {isAdminOrModerator && (
+                <>
+                  <li><Link to="/admin" className="hover:text-brand-ink">Dashboard</Link></li>
+                  <li><Link to="/admin/moderation" className="hover:text-brand-ink">Moderation</Link></li>
+                </>
+              )}
               <li><Link to="/profile" className="hover:text-brand-ink">Profile</Link></li>
               <li><Link to="/notifications" className="hover:text-brand-ink">Notifications</Link></li>
             </ul>

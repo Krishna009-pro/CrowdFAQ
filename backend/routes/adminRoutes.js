@@ -10,6 +10,8 @@ const {
   getAdminAnswers,
   updateAnswerOfficialStatus,
   deleteAnswer,
+  getAdminReports,
+  updateReportStatus,
 } = require("../controllers/adminController");
 const { protect } = require("../middleware/authMiddleware");
 const {
@@ -31,5 +33,7 @@ router.delete("/questions/:id", requireAdmin, deleteQuestion);
 router.get("/answers", getAdminAnswers);
 router.patch("/answers/:id/official", updateAnswerOfficialStatus);
 router.delete("/answers/:id", requireAdmin, deleteAnswer);
+router.get("/reports", getAdminReports);
+router.patch("/reports/:id", updateReportStatus);
 
 module.exports = router;

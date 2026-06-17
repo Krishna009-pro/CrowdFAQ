@@ -36,6 +36,9 @@ const searchRoutes = require("./routes/searchRoutes");
 // Routes for user profiles and user-owned content.
 const userRoutes = require("./routes/userRoutes");
 
+// Routes for real-time notifications.
+const notificationRoutes = require("./routes/notificationRoutes");
+
 
 // Creates the Express app instance.
 const app = express();
@@ -71,6 +74,9 @@ app.use("/api/v1/auth", authRoutes);
 
 // Mounts user profile endpoints under /api/v1/users.
 app.use("/api/v1/users", userRoutes);
+
+// Mounts notification endpoints under /api/v1/notifications.
+app.use("/api/v1/notifications", notificationRoutes);
 
 // Mounts admin moderation endpoints under /api/v1/admin.
 app.use("/api/v1/admin", adminRoutes);

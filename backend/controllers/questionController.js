@@ -381,22 +381,19 @@ const getQuestionById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        error: { message: "Question id must be a valid MongoDB ObjectId" },
-      });
-    }
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id }
+      : { slug: id };
 
-    const question = await Question.findById(id)
+    const question = await Question.findOne(query)
       .select("-embedding")
-      .populate("author", "displayName role reputationScore")
+      .populate("author", "displayName role reputationScore avatar title handle")
       .populate({
         path:    "answers",
         options: { sort: { isAccepted: -1, createdAt: 1 } },
         populate: {
           path:   "author",
-          select: "displayName role reputationScore",
+          select: "displayName role reputationScore avatar title handle",
         },
       });
 
