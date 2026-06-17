@@ -59,6 +59,21 @@ const questionSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    views: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    slug: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    excerpt: {
+      type: String,
+      trim: true,
+    },
     duplicateScore: {
       type: Number,
       default: null,

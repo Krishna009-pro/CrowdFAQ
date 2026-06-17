@@ -40,6 +40,20 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    handle: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    title: {
+      type: String,
+      trim: true,
+    },
+    avatar: {
+      type: String,
+      trim: true,
+    },
     // Lightweight achievement labels shown on user profiles.
     badges: {
       type: [String],
