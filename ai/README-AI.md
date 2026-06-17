@@ -45,7 +45,7 @@ npm install @google/generative-ai @xenova/transformers
 We support two ways to generate embeddings in the Node.js backend:
 
 #### Option A: Cloud Embeddings via Gemini API
-Uses Google's `text-embedding-004` (768 dimensions):
+Uses Google's `gemini-embedding-001` with a stored 768-dimension prefix:
 ```javascript
 // src/services/aiService.js
 const { GoogleGenAI } = require("@google/generative-ai");
@@ -53,9 +53,9 @@ const { GoogleGenAI } = require("@google/generative-ai");
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function getGeminiEmbedding(text) {
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
     const result = await model.embedContent(text);
-    return result.embedding.values; // Returns array of 768 floats
+    return result.embedding.values.slice(0, 768); // Store a 768-dimension prefix
 }
 ```
 

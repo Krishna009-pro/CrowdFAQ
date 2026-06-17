@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const EMBEDDING_DIMENSIONS = 768;
+const EMBEDDING_DIMENSIONS = 3072;
 
 const questionSchema = new mongoose.Schema(
   {

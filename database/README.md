@@ -179,7 +179,7 @@ The backend uses Gemini embeddings for semantic search.
 Current embedding model:
 
 ```text
-text-embedding-004
+gemini-embedding-001
 ```
 
 Current expected embedding dimensions:

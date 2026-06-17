@@ -1,8 +1,8 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const EMBEDDING_MODEL = "text-embedding-004";
-const CHAT_MODEL = "gemini-1.5-flash";
-const EMBEDDING_DIMENSIONS = 768;
+const EMBEDDING_MODEL = "models/gemini-embedding-001";
+const CHAT_MODEL = "gemini-2.5-flash";
+const EMBEDDING_DIMENSIONS = 3072;
 
 let genAI;
 
@@ -36,7 +36,9 @@ const generateGeminiEmbedding = async (input) => {
   }
 
   const model = getGenerativeModel(EMBEDDING_MODEL);
-  const response = await model.embedContent(normalizedInput);
+  const response = await model.embedContent({
+    content: { parts: [{ text: normalizedInput }] },
+  });
 
   return response.embedding.values;
 };
@@ -52,7 +54,7 @@ const generateChatbotAnswer = async ({ query, contextText }) => {
 
   const prompt = `
 You are the CrowdFAQ FAQ Assistant.
-Answer the user's question using only the community context below.
+Answer the user's question using the community context below.
 If the context is empty or does not answer the question, say you do not know yet and invite the user to post the question to the community.
 Keep the answer concise, helpful, and transparent.
 
