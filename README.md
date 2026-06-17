@@ -1,6 +1,6 @@
 # CrowdFAQ
 
-CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React frontend, an Express API, MongoDB-backed question and answer data, real-time updates, and optional OpenAI-powered semantic search.
+CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React TypeScript frontend, an Express API, MongoDB-backed question and answer data, real-time updates, and OpenAI-powered semantic search.
 
 ## What It Solves
 
@@ -13,19 +13,20 @@ CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React fro
 
 ### Frontend
 
-- React 18
-- React Router
-- Webpack Dev Server
-- Tailwind CSS
+- React 19 (TypeScript)
+- Craco (CRA config override)
+- Tailwind CSS & Tailwind Animate
+- Radix UI Primitives
 - Framer Motion
 - Axios
-- Zustand
-- Socket.IO client
+- TanStack React Query & SWR
+- React Hook Form & Zod
+- Recharts (for Analytics visualization)
 
 ### Backend
 
 - Node.js
-- Express 5
+- Express
 - MongoDB with Mongoose
 - JWT authentication
 - Socket.IO
@@ -36,7 +37,7 @@ CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React fro
 ```text
 CrowdFAQ/
   backend/      Express API, routes, models, services, seed script
-  frontend/     React app, Webpack config, UI source
+  frontend/     React TypeScript app, Craco config, UI source
   database/     Database-related project files
   docs/         Documentation
   testing/      Testing support files
@@ -49,22 +50,17 @@ CrowdFAQ/
 - MongoDB running locally or a MongoDB Atlas connection string
 - OpenAI API key if you want AI search/embedding features
 
-On Windows PowerShell, use `npm.cmd` if `npm` is blocked by the script execution policy.
+## Installation & Setup
 
-## Installation
+Since the frontend and backend are standalone packages, dependencies must be installed in their respective directories.
 
+### 1. Setup Backend
 From the repository root:
-
-```powershell
-npm.cmd install
+```bash
+cd backend
+npm install
 ```
-
-You can also use plain `npm install` if your shell allows it.
-
-## Environment Setup
-
 Create `backend/.env` and add:
-
 ```env
 MONGODB_URI=mongodb://localhost:27017/CrowdFAQ
 JWT_SECRET=change-this-secret
@@ -74,160 +70,54 @@ NODE_ENV=development
 OPENAI_API_KEY=your-openai-api-key
 ```
 
-Notes:
-
-- `OPENAI_API_KEY` is only required for OpenAI-backed features.
-- Use your MongoDB Atlas URI instead of the local MongoDB URI if you are not running MongoDB locally.
-- Do not commit `backend/.env`.
-
-## How To Run The Project
-
-Open two terminals.
-
-### Terminal 1: Start Backend
-
+### 2. Setup Frontend
 From the repository root:
-
-```powershell
-npm.cmd run backend:dev
-```
-
-Or from the backend folder:
-
-```powershell
-cd backend
-npm.cmd run dev
-```
-
-Backend URL:
-
-```text
-http://localhost:5000
-```
-
-Health check:
-
-```text
-http://localhost:5000/api/v1/health
-```
-
-### Terminal 2: Start Frontend
-
-From the repository root:
-
-```powershell
-npm.cmd run frontend:dev
-```
-
-Or from the frontend folder:
-
-```powershell
+```bash
 cd frontend
-npm.cmd run dev
+npm install --legacy-peer-deps --no-workspaces
 ```
 
-Frontend URL:
+---
 
-```text
-http://localhost:3001
+## Running the Project
+
+### Terminal 1: Run Backend
+```bash
+cd backend
+npm run dev
+# Runs backend on http://localhost:5000
 ```
+
+### Terminal 2: Run Frontend
+```bash
+cd frontend
+npm start
+# Runs frontend on http://localhost:3001
+```
+
+---
 
 ## Available Scripts
 
-### Root Scripts
-
-```powershell
-npm.cmd run frontend:dev   # Start the React dev server
-npm.cmd run backend:dev    # Start the Express API in watch mode
-npm.cmd run backend:start  # Start the Express API normally
-npm.cmd run build          # Build the frontend for production
-npm.cmd test               # Run tests across workspaces
-```
-
 ### Backend Scripts
-
-```powershell
-npm.cmd run dev    # Start backend with node --watch
-npm.cmd start      # Start backend normally
-npm.cmd test       # Run backend tests
+```bash
+npm run dev    # Start backend with node --watch
+npm start      # Start backend normally
+npm test       # Run backend tests
 ```
 
 ### Frontend Scripts
-
-```powershell
-npm.cmd run dev    # Start Webpack Dev Server
-npm.cmd start      # Same as dev
-npm.cmd run build  # Build production frontend assets
-npm.cmd test       # Run frontend tests
+```bash
+npm start      # Start React development server
+npm run build  # Build production frontend assets to frontend/build/
+npm test       # Run frontend tests
 ```
 
-## Common Issues
+---
 
-### `Missing script: "dev"` in frontend
+## Admin APIs & Moderation
 
-Make sure you have the latest `frontend/package.json`. The frontend now includes:
-
-```json
-"dev": "webpack serve --mode development"
-```
-
-### `'webpack' is not recognized`
-
-Install dependencies from the repository root:
-
-```powershell
-npm.cmd install
-```
-
-Then run the frontend again.
-
-### `Cannot find module ...`
-
-This usually means `node_modules` is incomplete or corrupted. Run:
-
-```powershell
-npm.cmd install
-```
-
-If OneDrive interrupted package extraction, reinstalling from the root usually repairs the missing package files.
-
-### Backend port already in use
-
-The backend uses port `5000` by default. Stop the old backend terminal with `Ctrl+C`, or change `PORT` in `backend/.env`.
-
-### MongoDB connection failed
-
-Start local MongoDB, or update `MONGODB_URI` in `backend/.env` with a valid MongoDB Atlas connection string.
-
-## Build
-
-To create a production frontend build:
-
-```powershell
-npm.cmd run build
-```
-
-The build output is written to:
-
-```text
-frontend/dist
-```
-
-## Team Workflow
-
-```powershell
-git checkout -b feature/my-update
-git add .
-git commit -m "Describe the change"
-git push origin feature/my-update
-```
-
-Then open a pull request to `main`.
-
-## Admin APIs
-
-The backend now includes a moderation/admin API surface implemented under:
-
+The backend includes a moderation/admin API surface implemented under:
 ```text
 backend/routes/adminRoutes.js
 backend/controllers/adminController.js
@@ -235,7 +125,6 @@ backend/middleware/adminMiddleware.js
 ```
 
 Available admin endpoints:
-
 ```text
 GET    /api/v1/admin/stats
 GET    /api/v1/admin/users
@@ -249,25 +138,5 @@ DELETE /api/v1/admin/answers/:id
 ```
 
 Role rules:
-
 - `moderator` and `admin` can access moderation dashboards and content controls.
 - Only `admin` can change user roles and permanently delete moderated content.
-
-Realtime moderation events exposed to clients:
-
-```text
-new_answer
-answer_accepted
-official_answer_created
-question_status_updated
-```
-
-Integration note:
-
-- The admin router code is ready, but the running Express app must mount `adminRoutes` before `/api/v1/admin/*` becomes live.
-
-## Notes
-
-- Keep secrets in `backend/.env`.
-- Do not commit `node_modules`.
-- Run `npm.cmd install` from the repository root so both workspaces are installed correctly.
