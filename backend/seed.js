@@ -106,6 +106,66 @@ const mockQuestions = [
     tags: ['postgres', 'sql', 'performance'],
     createdAt: '2026-02-06T08:44:00Z',
   },
+  {
+    mockId: 'q-007',
+    slug: 'sla-breach-customer-communication-script',
+    title: 'Do you have an SLA-breach communication script that does not sound corporate?',
+    excerpt: 'Looking for templates that admit failure clearly without legal sounding theater.',
+    body: 'Looking for templates that admit failure clearly without sounding like corporate theater.',
+    authorMockId: 'u3',
+    upvoteCount: 33,
+    downvoteCount: 0,
+    views: 1182,
+    status: 'answered',
+    category: 'support',
+    tags: ['sla', 'comms', 'templates'],
+    createdAt: '2026-02-07T13:20:00Z',
+  },
+  {
+    mockId: 'q-008',
+    slug: 'how-to-write-prd-that-engineers-actually-read',
+    title: 'How do you write a PRD that engineers will actually read past page one?',
+    excerpt: 'Tried inverted pyramid, decision logs, FAQs. Engineers still skim. Looking for what worked for you.',
+    body: 'Tried inverted pyramid, decision logs, FAQs. Engineers still skim. Looking for what worked for you.',
+    authorMockId: 'u3',
+    upvoteCount: 215,
+    downvoteCount: 0,
+    views: 8902,
+    status: 'verified',
+    category: 'product',
+    tags: ['prd', 'product', 'writing'],
+    createdAt: '2026-01-28T17:00:00Z',
+  },
+  {
+    mockId: 'q-009',
+    slug: 'gdpr-data-retention-server-logs',
+    title: 'Is keeping raw server access logs for 18 months a GDPR risk?',
+    excerpt: 'Auditor flagged our 18-month log retention. Need a defensible policy.',
+    body: 'Auditor flagged our 18-month log retention. Need a defensible policy that does not break incident response.',
+    authorMockId: 'u5',
+    upvoteCount: 41,
+    downvoteCount: 0,
+    views: 974,
+    status: 'answered',
+    category: 'legal',
+    tags: ['gdpr', 'logs', 'retention'],
+    createdAt: '2026-02-05T15:48:00Z',
+  },
+  {
+    mockId: 'q-010',
+    slug: 'kubernetes-secret-mounting-vs-csi-driver',
+    title: 'Should we use Kubernetes Secret objects or a CSI driver for production secrets?',
+    excerpt: 'Migrating from raw Secrets to AWS Secrets Manager. Worth the complexity?',
+    body: 'Migrating from raw Secrets to AWS Secrets Manager. Worth the complexity?',
+    authorMockId: 'u1',
+    upvoteCount: 76,
+    downvoteCount: 0,
+    views: 2603,
+    status: 'verified',
+    category: 'security',
+    tags: ['kubernetes', 'secrets', 'aws'],
+    createdAt: '2026-02-03T12:10:00Z',
+  },
 ];
 
 const mockAnswers = {
@@ -128,18 +188,46 @@ const mockAnswers = {
       mockId: 'a-4', authorMockId: 'u2', upvoteCount: 30, downvoteCount: 0, isAccepted: true, createdAt: '2026-02-09T12:00:00Z',
       body: "We structure our design tokens in three tiers: 1. Global Tokens (raw values like color-blue-500), 2. Alias Tokens (semantic meanings like color-background-primary), and 3. Component Tokens (specific elements like button-primary-background). This makes them incredibly clean to update.",
     }
+  ],
+  'q-008': [
+    {
+      mockId: 'a-5', authorMockId: 'u1', upvoteCount: 132, downvoteCount: 0, isAccepted: true, createdAt: '2026-01-28T18:22:00Z',
+      body: "Lead with the decision. Page one is: what we're building, why, and the one number that proves it worked. Push every framework, persona doc, and exploration into appendices. Engineers will read appendices for the parts they care about. They will not read 12 pages of context to find the ask.",
+    },
+    {
+      mockId: 'a-6', authorMockId: 'u2', upvoteCount: 41, downvoteCount: 0, isAccepted: false, createdAt: '2026-01-28T20:11:00Z',
+      body: "We split PRDs into 'Brief' (1 page, decision + scope) and 'Spec' (long form). Engineers only need to read the Brief to start estimating. The Spec is the working document during build.",
+    },
+  ],
+  'q-006': [
+    {
+      mockId: 'a-7', authorMockId: 'u1', upvoteCount: 50, downvoteCount: 0, isAccepted: true, createdAt: '2026-02-06T10:00:00Z',
+      body: "A self-join can outperform a window function in Postgres when the join filter is highly selective and can utilize an index, whereas ROW_NUMBER() forces a full scan and sort. Postgres 16 planner optimizer is better, but sorting 2B rows in memory still fails.",
+    }
+  ],
+  'q-009': [
+    {
+      mockId: 'a-8', authorMockId: 'u5', upvoteCount: 15, downvoteCount: 0, isAccepted: true, createdAt: '2026-02-05T17:10:00Z',
+      body: "Keeping raw server logs containing IPs for 18 months without a clear business/security justification is definitely a GDPR risk. IP addresses are considered personal data. The standard best practice is to truncate or anonymize IPs after 30 days, keeping only aggregated metrics for long-term retention.",
+    }
   ]
 };
 
 const mockNotifications = [
-  { type: 'answer', actorMockId: 'u1', targetMockId: 'q-001', read: false, text: 'Mira Halverson answered your question on IAM key rotation.' },
-  { type: 'mention', actorMockId: 'u2', targetMockId: 'q-004', read: false, text: 'Daniel Okafor mentioned you in a comment on a PRD question.' },
-  { type: 'accepted', actorMockId: 'u3', targetMockId: 'q-004', read: false, text: 'Your answer was accepted on "What naming convention do you use for design tokens".' },
+  { mockId: 'n1', type: 'answer', actorMockId: 'u1', targetMockId: 'q-001', read: false, text: 'Mira Halverson answered your question on IAM key rotation.' },
+  { mockId: 'n2', type: 'mention', actorMockId: 'u2', targetMockId: 'q-008', read: false, text: 'Daniel Okafor mentioned you in a comment on a PRD question.' },
+  { mockId: 'n3', type: 'accepted', actorMockId: 'u3', targetMockId: 'q-008', read: false, text: 'Your answer was accepted on "How do you write a PRD that engineers will read".' },
+  { mockId: 'n4', type: 'vote', actorMockId: 'u4', targetMockId: 'q-006', read: true, text: 'Your answer received 25 upvotes on a Postgres window function question.' },
+  { mockId: 'n5', type: 'system', actorMockId: null, targetMockId: null, read: true, text: 'You earned the "Curator" badge for editing 25 questions.' },
+  { mockId: 'n6', type: 'answer', actorMockId: 'u5', targetMockId: 'q-009', read: true, text: 'Priya Raghavan answered your question on GDPR log retention.' },
 ];
 
 const mockReports = [
-  { targetMockId: 'q-005', type: 'question', reason: 'Spam / promotional', reporterMockId: 'u2', status: 'pending' },
-  { targetMockId: 'a-2', type: 'answer', reason: 'Misinformation', reporterMockId: 'u4', status: 'pending' },
+  { mockId: 'r1', targetMockId: 'q-005', type: 'question', reason: 'Spam / promotional', reporterMockId: 'u2', status: 'pending' },
+  { mockId: 'r2', targetMockId: 'a-2', type: 'answer', reason: 'Misinformation', reporterMockId: 'u4', status: 'pending' },
+  { mockId: 'r3', targetMockId: 'q-007', type: 'question', reason: 'Duplicate', reporterMockId: 'u1', status: 'pending' },
+  { mockId: 'r4', targetMockId: 'a-3', type: 'answer', reason: 'Off-topic', reporterMockId: 'u6', status: 'pending' },
+  { mockId: 'r5', targetMockId: 'q-003', type: 'question', reason: 'Low quality', reporterMockId: 'u5', status: 'resolved' },
 ];
 
 async function seedDatabase() {
@@ -220,8 +308,8 @@ async function seedDatabase() {
 
     // 3. Seed Notifications
     for (const n of mockNotifications) {
-      const actor = userMap[n.actorMockId];
-      const target = questionMap[n.targetMockId];
+      const actor = n.actorMockId ? userMap[n.actorMockId] : null;
+      const target = n.targetMockId ? questionMap[n.targetMockId] : null;
       await Notification.create({
         type: n.type,
         actor: actor ? actor._id : null,
