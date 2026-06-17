@@ -149,8 +149,8 @@ export default function QuestionDetail() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-px bg-brand-line border border-brand-line">
-              <div className="bg-white px-3 py-3"><p className="font-serif text-2xl">{author.reputation.toLocaleString()}</p><p className="label-eyebrow text-[9px]">Reputation</p></div>
-              <div className="bg-white px-3 py-3"><p className="font-serif text-2xl">{author.joined.split(' ')[1]}</p><p className="label-eyebrow text-[9px]">Member since</p></div>
+              <div className="bg-white px-3 py-3"><p className="font-sans font-semibold text-2xl">{author.reputation.toLocaleString()}</p><p className="label-eyebrow text-[9px]">Reputation</p></div>
+              <div className="bg-white px-3 py-3"><p className="font-sans font-semibold text-2xl">{author.joined.split(' ')[1]}</p><p className="label-eyebrow text-[9px]">Member since</p></div>
             </div>
           </div>
         </aside>
@@ -162,7 +162,7 @@ export default function QuestionDetail() {
 const VoteColumn = ({ count, testid }) => (
   <div className="flex flex-col items-center w-12 shrink-0" data-testid={testid}>
     <button className="text-brand-mute hover:text-brand-ink p-1"><ChevronUp size={22} strokeWidth={1.5} /></button>
-    <span className="font-serif text-3xl text-brand-ink leading-none my-1">{count}</span>
+    <span className="font-sans font-semibold text-3xl text-brand-ink leading-none my-1">{count}</span>
     <button className="text-brand-mute hover:text-brand-vermilion p-1"><ChevronDown size={22} strokeWidth={1.5} /></button>
   </div>
 );

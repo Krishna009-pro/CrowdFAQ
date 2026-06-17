@@ -53,7 +53,7 @@ export default function Home() {
                 { k: "Contributors", v: "2,310" },
               ].map((s) => (
                 <div key={s.k} className="bg-white px-6 py-5">
-                  <p className="font-serif text-3xl md:text-4xl text-brand-ink leading-none">{s.v}</p>
+                  <p className="font-sans font-semibold text-3xl md:text-4xl text-brand-ink leading-none">{s.v}</p>
                   <p className="label-eyebrow mt-2">{s.k}</p>
                 </div>
               ))}
@@ -102,7 +102,7 @@ export default function Home() {
                 <li key={c.slug}>
                   <Link to={`/categories/${c.slug}`} className="flex items-center justify-between py-3 hover:text-brand-blue transition-colors" data-testid={`trending-${c.slug}`}>
                     <span className="flex items-center gap-3">
-                      <span className="font-serif text-brand-mute text-sm w-5">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="font-sans font-medium text-brand-mute text-sm w-5">{String(i + 1).padStart(2, '0')}</span>
                       <span className="text-sm text-brand-ink">{c.name}</span>
                     </span>
                     <span className="text-xs text-brand-mute tabular-nums">{c.count}</span>
@@ -117,13 +117,13 @@ export default function Home() {
             <ul className="space-y-4">
               {users.slice(0, 4).map((u, i) => (
                 <li key={u.id} className="flex items-center gap-3">
-                  <span className="font-serif text-brand-mute text-sm w-5">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="font-sans font-medium text-brand-mute text-sm w-5">{String(i + 1).padStart(2, '0')}</span>
                   <img src={u.avatar} alt={u.name} className="w-9 h-9 object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-brand-ink truncate">{u.name}</p>
                     <p className="text-[10px] uppercase tracking-widest text-brand-mute">{u.title}</p>
                   </div>
-                  <span className="font-serif text-lg text-brand-ink tabular-nums">{(u.reputation/1000).toFixed(1)}k</span>
+                  <span className="font-sans font-semibold text-base text-brand-ink tabular-nums">{(u.reputation/1000).toFixed(1)}k</span>
                 </li>
               ))}
             </ul>

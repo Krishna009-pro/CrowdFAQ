@@ -63,7 +63,7 @@ export default function Categories() {
               data-testid={`category-card-${c.slug}`}
             >
               <div className="flex items-start justify-between mb-6">
-                <span className="font-serif text-xl text-brand-mute">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-sans font-medium text-xl text-brand-mute">{String(i + 1).padStart(2, '0')}</span>
                 <ArrowUpRight size={18} className="text-brand-mute group-hover:text-brand-ink transition-colors" />
               </div>
               <h3 className="font-serif text-3xl md:text-4xl text-brand-ink leading-none mb-3 tracking-tight">{c.name}</h3>
@@ -88,7 +88,7 @@ export default function Categories() {
 
 const Stat = ({ label, value }) => (
   <div>
-    <p className="font-serif text-4xl text-brand-ink leading-none">{value}</p>
+    <p className="font-sans font-semibold text-4xl text-brand-ink leading-none">{value}</p>
     <p className="label-eyebrow mt-2">{label}</p>
   </div>
 );

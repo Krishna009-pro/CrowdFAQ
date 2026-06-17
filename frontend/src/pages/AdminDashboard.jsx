@@ -32,7 +32,7 @@ export default function AdminDashboard() {
               <p className="label-eyebrow">{m.k}</p>
               <m.icon size={16} className="text-brand-mute" strokeWidth={1.5} />
             </div>
-            <p className="font-serif text-4xl md:text-5xl text-brand-ink leading-none">{m.v}</p>
+            <p className="font-sans font-semibold text-4xl md:text-5xl text-brand-ink leading-none">{m.v}</p>
             <div className={`mt-3 flex items-center gap-1.5 text-xs ${m.up ? 'text-brand-forest' : 'text-brand-vermilion'}`}>
               {m.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
               {m.delta} <span className="text-brand-mute">vs. last week</span>
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-brand-ink">{u.name}</p>
                   <p className="text-[10px] uppercase tracking-widest text-brand-mute">{u.title} · {u.joined}</p>
                 </div>
-                <span className="font-serif text-lg tabular-nums">{(u.reputation/1000).toFixed(1)}k</span>
+                <span className="font-sans font-semibold text-base tabular-nums">{(u.reputation/1000).toFixed(1)}k</span>
               </li>
             ))}
           </ul>

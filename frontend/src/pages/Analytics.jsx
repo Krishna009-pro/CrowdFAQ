@@ -37,7 +37,7 @@ export default function Analytics() {
           ].map((s) => (
             <div key={s.k} className="bg-white p-6">
               <s.icon size={16} className="text-brand-mute mb-3" strokeWidth={1.5} />
-              <p className="font-serif text-4xl text-brand-ink leading-none">{s.v}</p>
+              <p className="font-sans font-semibold text-4xl text-brand-ink leading-none">{s.v}</p>
               <p className="label-eyebrow mt-3">{s.k}</p>
             </div>
           ))}
@@ -107,7 +107,7 @@ export default function Analytics() {
             <ol className="space-y-3">
               {mostViewed.map((q, i) => (
                 <li key={q.id} className="flex items-start gap-4 border-b border-brand-line pb-3 last:border-b-0">
-                  <span className="font-serif text-2xl text-brand-mute w-8">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="font-sans font-semibold text-2xl text-brand-mute w-8">{String(i + 1).padStart(2, '0')}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-serif text-base text-brand-ink leading-snug line-clamp-2">{q.title}</p>
                     <p className="text-[10px] uppercase tracking-widest text-brand-mute mt-1">{q.views.toLocaleString()} views · {q.answers} answers</p>
@@ -140,7 +140,7 @@ export default function Analytics() {
               <tbody>
                 {topContributors.map((u, i) => (
                   <tr key={u.id} className="border-b border-brand-line last:border-b-0 hover:bg-[#F9F9F8]">
-                    <td className="px-6 py-4 font-serif text-lg">{String(i + 1).padStart(2, '0')}</td>
+                    <td className="px-6 py-4 font-sans font-medium text-base text-brand-mute">{String(i + 1).padStart(2, '0')}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img src={u.avatar} alt="" className="w-8 h-8 object-cover" />
@@ -151,7 +151,7 @@ export default function Analytics() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-brand-body">{u.title}</td>
-                    <td className="px-6 py-4 text-right font-serif text-lg tabular-nums">{u.reputation.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right font-sans font-semibold text-base tabular-nums">{u.reputation.toLocaleString()}</td>
                     <td className="px-6 py-4 text-right text-brand-forest text-xs">+{(Math.random() * 4 + 1).toFixed(1)}%</td>
                   </tr>
                 ))}

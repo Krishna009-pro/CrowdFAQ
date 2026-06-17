@@ -52,7 +52,7 @@ export default function UserProfile() {
               { k: "Accepted rate", v: "78%" },
             ].map((s) => (
               <div key={s.k} className="bg-white px-6 py-5">
-                <p className="font-serif text-3xl md:text-4xl text-brand-ink">{s.v}</p>
+                <p className="font-sans font-semibold text-3xl md:text-4xl text-brand-ink">{s.v}</p>
                 <p className="label-eyebrow mt-2">{s.k}</p>
               </div>
             ))}

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,12 +6,12 @@
 
 body {
     margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background: #F9F9F8;
     color: #111110;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.01em;
 }
 
 input, textarea, select {
@@ -71,15 +71,16 @@ code, pre {
 
 @layer utilities {
     .font-serif {
-        font-family: 'Cormorant Garamond', Georgia, serif;
-        font-feature-settings: "liga", "dlig";
+        font-family: 'Lora', Georgia, serif;
+        font-feature-settings: "liga", "dlig", "lnum";
+        font-variant-numeric: lining-nums;
     }
     .font-sans {
-        font-family: 'Inter', system-ui, sans-serif;
-        letter-spacing: -0.015em;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        letter-spacing: -0.01em;
     }
     .label-eyebrow {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Plus Jakarta Sans', sans-serif;
         font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 0.18em;

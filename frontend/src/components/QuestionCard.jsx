@@ -21,7 +21,7 @@ export const QuestionCard = ({ q, variant = "default" }) => {
           <button className="text-brand-mute hover:text-brand-ink transition-colors p-1" data-testid={`upvote-${q.id}`}>
             <ChevronUp size={20} strokeWidth={1.5} />
           </button>
-          <span className="font-serif text-2xl text-brand-ink leading-none my-1">{q.votes}</span>
+          <span className="font-sans font-semibold text-2xl text-brand-ink leading-none my-1">{q.votes}</span>
           <button className="text-brand-mute hover:text-brand-vermilion transition-colors p-1" data-testid={`downvote-${q.id}`}>
             <ChevronDown size={20} strokeWidth={1.5} />
           </button>

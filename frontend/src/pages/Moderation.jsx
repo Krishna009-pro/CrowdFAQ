@@ -41,7 +41,7 @@ export default function Moderation() {
         ].map((s) => (
           <button key={s.k} onClick={() => setTab(s.k)} className={`bg-white p-5 text-left transition-colors hover:bg-[#F9F9F8] ${tab === s.k ? 'ring-1 ring-brand-ink ring-inset' : ''}`} data-testid={`mod-tab-${s.k}`}>
             <p className="label-eyebrow">{s.label}</p>
-            <p className={`font-serif text-4xl mt-2 ${s.color}`}>{s.v}</p>
+            <p className={`font-sans font-semibold text-4xl mt-2 ${s.color}`}>{s.v}</p>
           </button>
         ))}
       </div>
