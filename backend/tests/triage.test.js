@@ -1,43 +1,52 @@
+const express = require("express");
 const request = require("supertest");
-const app = require("../server");
-const mongoose = require("mongoose");
-const { generateEmbedding } = require("../services/openaiService");
 
-// Mock the OpenAI service
 jest.mock("../services/openaiService", () => ({
   generateEmbedding: jest.fn(),
-  generateProvisionalDraft: jest.fn()
+  generateProvisionalDraft: jest.fn(),
 }));
 
-// Mock the Auth Middleware to bypass auth for testing
-// We must mock the entire module to export a 'protect' function
-jest.mock("../middleware/authMiddleware", () => {
-  const mongoose = require("mongoose");
-  return {
-    protect: (req, res, next) => {
-      req.user = { _id: new mongoose.Types.ObjectId(), displayName: "Test User" };
-      next();
-    }
-  };
-});
+jest.mock("../models/Question", () => ({
+  aggregate: jest.fn(),
+  find: jest.fn(),
+}));
 
-describe("Triage Integration Tests", () => {
-  beforeAll(async () => {
-    // Avoid connecting to real mongo if we can, 
-    // but app.js currently does it on require.
-    // In a real Staff Engineer scenario, we'd refactor app/server separation properly.
+const Question = require("../models/Question");
+const { generateEmbedding } = require("../services/openaiService");
+const searchRoutes = require("../routes/searchRoutes");
+const { errorHandler } = require("../middleware/errorHandler");
+
+const createTestApp = () => {
+  const app = express();
+  app.use(express.json());
+  app.use("/api/v1/search", searchRoutes);
+  app.use(errorHandler);
+  return app;
+};
+
+const mockTextSearch = (matches = []) => {
+  Question.find.mockReturnValue({
+    limit: jest.fn().mockReturnValue({
+      lean: jest.fn().mockResolvedValue(matches),
+    }),
+  });
+};
+
+describe("Triage API", () => {
+  let app;
+
+  beforeEach(() => {
+    process.env.NODE_ENV = "test";
+    jest.clearAllMocks();
+    app = createTestApp();
   });
 
-  afterAll(async () => {
-    await mongoose.connection.close();
-  });
-
-  it("GET /api/v1/search should return allow_post when no matches found", async () => {
-    // MongoDB Atlas Cosine similarity fails on zero vectors.
-    // Use a small non-zero vector for testing.
+  it("returns allow_post when no matches are found", async () => {
     const mockVector = new Array(1536).fill(0);
     mockVector[0] = 0.1;
     generateEmbedding.mockResolvedValue(mockVector);
+    Question.aggregate.mockResolvedValue([]);
+    mockTextSearch([]);
 
     const res = await request(app)
       .get("/api/v1/search")
@@ -46,12 +55,16 @@ describe("Triage Integration Tests", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.action).toBe("allow_post");
-    expect(res.body.data).toHaveProperty("matches");
+    expect(res.body.data.matches).toEqual([]);
+    expect(Question.aggregate).toHaveBeenCalled();
+    expect(Question.find).toHaveBeenCalled();
   });
 
-  it("GET /api/v1/search should return 400 if query is missing", async () => {
+  it("returns 400 if query is missing", async () => {
     const res = await request(app).get("/api/v1/search");
+
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
+    expect(generateEmbedding).not.toHaveBeenCalled();
   });
 });
