@@ -19,7 +19,7 @@ jest.mock("../middleware/authMiddleware", () => ({
   },
 }));
 
-jest.mock("../services/openaiService", () => ({
+jest.mock("../services/aiService", () => ({
   generateEmbedding: jest.fn().mockResolvedValue([]),
   generateProvisionalDraft: jest.fn().mockResolvedValue("Draft answer"),
 }));

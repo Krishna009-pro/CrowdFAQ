@@ -16,8 +16,8 @@ const env = {
   mongodbUri: process.env.MONGODB_URI,
   // Current runtime mode, such as development, test, or production.
   nodeEnv: process.env.NODE_ENV || "development",
-  // OpenAI API key used for embeddings and provisional answer drafts.
-  openaiApiKey: process.env.OPENAI_API_KEY,
+  // Gemini API key used for embeddings, FAQ assistant answers, and AI drafts.
+  geminiApiKey: process.env.GEMINI_API_KEY,
   // HTTP port used by server.js.
   port: process.env.PORT || 5000,
 };

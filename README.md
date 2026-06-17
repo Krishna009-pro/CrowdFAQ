@@ -1,6 +1,6 @@
 # CrowdFAQ
 
-CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React TypeScript frontend, an Express API, MongoDB-backed question and answer data, real-time updates, and OpenAI-powered semantic search.
+CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React TypeScript frontend, an Express API, MongoDB-backed question and answer data, real-time updates, and Gemini-powered semantic search.
 
 ## What It Solves
 
@@ -30,7 +30,7 @@ CrowdFAQ is a crowdsourced FAQ and community Q&A portal. It combines a React Typ
 - MongoDB with Mongoose
 - JWT authentication
 - Socket.IO
-- OpenAI API integration for semantic search features
+- Gemini API integration for semantic search, summaries, and FAQ assistant features
 
 ## Project Structure
 
@@ -48,7 +48,7 @@ CrowdFAQ/
 - Node.js 18 or newer
 - npm
 - MongoDB running locally or a MongoDB Atlas connection string
-- OpenAI API key if you want AI search/embedding features
+- Gemini API key if you want AI search/embedding/chatbot features
 
 ## Installation & Setup
 
@@ -67,7 +67,7 @@ JWT_SECRET=change-this-secret
 PORT=5000
 CLIENT_ORIGIN=http://localhost:3001
 NODE_ENV=development
-OPENAI_API_KEY=your-openai-api-key
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ### 2. Setup Frontend

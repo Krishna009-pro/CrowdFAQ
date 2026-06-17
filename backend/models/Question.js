@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const EMBEDDING_DIMENSIONS = 768;
+
 const questionSchema = new mongoose.Schema(
   {
     title: {
@@ -32,9 +34,9 @@ const questionSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator(value) {
-          return value.length === 0 || value.length === 1536;
+          return value.length === 0 || value.length === EMBEDDING_DIMENSIONS;
         },
-        message: "Question embedding must contain 1536 dimensions",
+        message: `Question embedding must contain ${EMBEDDING_DIMENSIONS} dimensions`,
       },
     },
     duplicateOf: {

@@ -15,6 +15,9 @@ const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 // Routes for admin moderation, dashboard stats, and content management.
 const adminRoutes = require("./routes/adminRoutes");
 
+// Routes for Gemini-backed duplicate checks, summaries, and FAQ assistant chat.
+const aiRoutes = require("./routes/aiRoutes");
+
 // Routes for answer creation, voting, accepting, and official answers.
 const answerRoutes = require("./routes/answerRoutes");
 
@@ -50,6 +53,9 @@ app.use(cookieParser());
 
 // Mounts root and health endpoints.
 app.use("/", healthRoutes);
+
+// Mounts Gemini-backed AI endpoints under /api/v1/ai.
+app.use("/api/v1/ai", aiRoutes);
 
 // Mounts search endpoints under /api/v1/search.
 app.use("/api/v1/search", searchRoutes);

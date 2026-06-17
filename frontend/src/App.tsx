@@ -1,5 +1,6 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { FaqAssistant } from "@/components/FaqAssistant";
 import { Toaster } from "@/components/ui/sonner";
 
 import Home from "@/pages/Home";
@@ -38,6 +39,7 @@ function App() {
           <Route path="/admin/settings" element={<AdminDashboard />} />
           <Route path="/analytics" element={<Analytics />} />
         </Routes>
+        <FaqAssistant />
         <Toaster position="bottom-right" />
       </BrowserRouter>
     </div>
