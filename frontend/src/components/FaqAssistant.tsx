@@ -1,11 +1,13 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, ExternalLink, Loader2, MessageCircle, Send, User, X } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Bot, ExternalLink, Loader2, MessageCircle, Send, User, X, BookOpen } from "lucide-react";
 
 type ChatRole = "assistant" | "user";
 
 type Citation = {
   id?: string;
   title?: string;
+  slug?: string;
 };
 
 type ChatMessage = {
@@ -13,7 +15,6 @@ type ChatMessage = {
   role: ChatRole;
   text: string;
   citations?: Citation[];
-  // legacy
   matches?: Citation[];
 };
 
@@ -22,7 +23,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:500
 const starterMessage: ChatMessage = {
   id: "assistant-starter",
   role: "assistant",
-  text: "Ask me about existing CrowdFAQ questions and answers. I will search the knowledge base first.",
+  text: "Welcome to CrowdFAQ Copilot! Ask me any technical or community question. I'll search our community-sourced knowledge base and answer you instantly.",
 };
 
 const buildId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -42,12 +43,6 @@ export const FaqAssistant = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
-
-  const recentCitations = useMemo(() => {
-    const assistantMessages = messages.filter((m) => m.role === "assistant");
-    const last = assistantMessages[assistantMessages.length - 1];
-    return (last?.citations ?? last?.matches ?? []).slice(0, 3);
-  }, [messages]);
 
   const toggleOpen = () => {
     setOpen((value) => !value);
@@ -117,100 +112,175 @@ export const FaqAssistant = () => {
     }
   };
 
+  // Helper to parse [Source N] and replace with interactive Link
+  const renderMessageText = (text: string, citations: Citation[] = []) => {
+    if (!text) return "";
+
+    const regex = /\[Source\s+(\d+)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      const matchIndex = match.index;
+      const fullMatch = match[0];
+      const sourceNum = parseInt(match[1], 10);
+
+      // Add text before the match
+      if (matchIndex > lastIndex) {
+        parts.push(text.substring(lastIndex, matchIndex));
+      }
+
+      const citation = citations[sourceNum - 1];
+      if (citation) {
+        const targetPath = citation.slug ? `/q/${citation.slug}` : `/q/${citation.id}`;
+        parts.push(
+          <Link
+            key={`inline-citation-${sourceNum}-${matchIndex}`}
+            to={targetPath}
+            className="inline-flex items-center align-baseline px-1.5 py-0.5 bg-[#E8F0ED] hover:bg-[#00684A] text-[#00684A] hover:text-white border border-[#00684A]/20 text-[10px] font-bold rounded mx-0.5 transition-colors cursor-pointer"
+            title={citation.title}
+          >
+            [{sourceNum}]
+          </Link>
+        );
+      } else {
+        parts.push(fullMatch);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 z-[70] w-[calc(100vw-2rem)] max-w-[390px] sm:bottom-6 sm:right-6 sm:w-[390px]">
+    <div className="fixed bottom-4 right-4 z-[70] w-[calc(100vw-2rem)] max-w-[420px] sm:bottom-6 sm:right-6 sm:w-[420px] font-sans">
       {open && (
         <section
-          className="mb-3 border border-brand-ink bg-white shadow-[0_18px_60px_rgba(17,17,16,0.16)]"
+          className="mb-3 border border-[#E6E6E1] bg-white shadow-[0_12px_40px_rgba(0,30,43,0.16)] rounded-2xl overflow-hidden flex flex-col h-[520px] transition-all duration-300 ease-in-out"
           aria-label="FAQ assistant"
           data-testid="faq-assistant-panel"
         >
-          <div className="flex h-14 items-center justify-between border-b border-brand-line px-4">
+          {/* Header (MongoDB Dark Slate Theme) */}
+          <div className="flex h-16 shrink-0 items-center justify-between bg-[#001E2B] px-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-brand-ink text-brand-paper">
-                <Bot size={16} />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#00684A] text-white">
+                <Bot size={20} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-brand-ink">FAQ Assistant</p>
-                <p className="truncate text-[11px] text-brand-mute">Searches community answers</p>
+                <p className="text-sm font-semibold text-white tracking-wide">CrowdFAQ Copilot</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[#02B875] animate-pulse" />
+                  <p className="text-[11px] text-[#A6C0B5]">AI assistant online</p>
+                </div>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="flex h-8 w-8 items-center justify-center border border-brand-line text-brand-body hover:border-brand-ink hover:text-brand-ink"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[#A6C0B5] hover:text-white hover:bg-white/10 transition-colors"
               title="Close assistant"
               aria-label="Close assistant"
             >
-              <X size={15} />
+              <X size={18} />
             </button>
           </div>
 
-          <div className="max-h-[390px] space-y-3 overflow-y-auto bg-brand-paper p-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {message.role === "assistant" && (
-                  <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center border border-brand-line bg-white text-brand-blue">
-                    <Bot size={14} />
-                  </div>
-                )}
+          {/* Chat Panel Body */}
+          <div className="flex-1 overflow-y-auto bg-[#F9FBFB] p-4 space-y-4">
+            {messages.map((message) => {
+              const hasCitations = (message.citations || message.matches || []).length > 0;
+              const activeCitations = message.citations || message.matches || [];
+
+              return (
                 <div
-                  className={`max-w-[78%] border px-3 py-2 text-sm leading-6 ${
-                    message.role === "user"
-                      ? "border-brand-ink bg-brand-ink text-brand-paper"
-                      : "border-brand-line bg-white text-brand-body"
-                  }`}
+                  key={message.id}
+                  className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {message.text}
-                </div>
-                {message.role === "user" && (
-                  <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center border border-brand-line bg-white text-brand-ink">
-                    <User size={14} />
+                  {message.role === "assistant" && (
+                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E6E6E1] bg-white text-[#00684A] shadow-sm">
+                      <Bot size={15} />
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col gap-2 max-w-[80%]">
+                    {/* Message Bubble */}
+                    <div
+                      className={`px-4 py-3 text-sm leading-relaxed whitespace-pre-line shadow-sm border ${
+                        message.role === "user"
+                          ? "border-[#00684A] bg-[#00684A] text-white rounded-2xl rounded-tr-none"
+                          : "border-[#E6E6E1] bg-white text-[#1C2D24] rounded-2xl rounded-tl-none"
+                      }`}
+                    >
+                      {message.role === "assistant"
+                        ? renderMessageText(message.text, activeCitations)
+                        : message.text}
+                    </div>
+
+                    {/* Sources (MongoDB Pill-style) */}
+                    {message.role === "assistant" && hasCitations && (
+                      <div className="mt-1 pl-1 space-y-1.5">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#8A8A85] flex items-center gap-1">
+                          <BookOpen size={10} /> Sources
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeCitations.slice(0, 3).map((c, i) => {
+                            const targetPath = c.slug ? `/q/${c.slug}` : `/q/${c.id}`;
+                            return (
+                              <Link
+                                key={c.id || i}
+                                to={targetPath}
+                                className="inline-flex items-center gap-1 rounded-lg border border-[#E6E6E1] bg-white px-2.5 py-1 text-xs text-[#1C2D24] hover:bg-[#E8F0ED] hover:border-[#00684A] hover:text-[#00684A] transition-all max-w-[220px] truncate shadow-sm"
+                                title={c.title}
+                              >
+                                <span className="font-semibold text-[#00684A] shrink-0">[{i + 1}]</span>
+                                <span className="truncate">{c.title}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {message.role === "user" && (
+                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E6E6E1] bg-white text-[#001E2B] shadow-sm">
+                      <User size={15} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {loading && (
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-mute">
+              <div className="flex items-center gap-2 pl-1 text-xs font-bold uppercase tracking-wider text-[#00684A]">
                 <Loader2 size={14} className="animate-spin" />
-                Searching
+                Searching CrowdFAQ...
               </div>
             )}
             <div ref={bottomRef} />
           </div>
 
-          {recentCitations.length > 0 && (
-            <div className="border-t border-brand-line bg-white px-4 py-3">
-              <p className="label-eyebrow mb-2">Sources</p>
-              <div className="space-y-1.5">
-                {recentCitations.map((c, i) => (
-                  <div key={c.id || i} className="flex items-start gap-1.5 text-xs text-brand-body">
-                    <ExternalLink size={11} className="mt-0.5 shrink-0 text-brand-mute" />
-                    <span className="truncate">{c.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={submitMessage} className="flex border-t border-brand-line bg-white p-3">
+          {/* Input Area (MongoDB Styled Focus states) */}
+          <form onSubmit={submitMessage} className="flex border-t border-[#E6E6E1] bg-white p-3 shrink-0">
             <input
               ref={inputRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-w-0 flex-1 border border-brand-line px-3 py-2 text-sm outline-none focus:border-brand-ink"
-              placeholder="Ask a FAQ question..."
+              className="min-w-0 flex-1 border border-[#E6E6E1] rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:border-[#00684A] focus:ring-1 focus:ring-[#00684A]"
+              placeholder="Ask a technical or platform question..."
               aria-label="Ask the FAQ assistant"
               data-testid="faq-assistant-input"
             />
             <button
               type="submit"
               disabled={!canSend}
-              className="ml-2 flex h-10 w-10 items-center justify-center bg-brand-ink text-brand-paper transition-colors hover:bg-brand-blue disabled:cursor-not-allowed disabled:opacity-50"
+              className="ml-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#00684A] text-white transition-all hover:bg-[#004d36] disabled:cursor-not-allowed disabled:opacity-50"
               title="Send message"
               aria-label="Send message"
               data-testid="faq-assistant-send"
@@ -221,15 +291,16 @@ export const FaqAssistant = () => {
         </section>
       )}
 
+      {/* Launcher Button (MongoDB green color & pulse effect) */}
       <button
         type="button"
         onClick={toggleOpen}
-        className="ml-auto flex h-12 w-12 items-center justify-center bg-brand-vermilion text-white shadow-[0_12px_30px_rgba(217,56,30,0.28)] transition-colors hover:bg-brand-blue"
+        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#00684A] text-white shadow-[0_8px_24px_rgba(0,104,74,0.3)] transition-all hover:bg-[#02B875] hover:scale-105 duration-200"
         title={open ? "Close FAQ assistant" : "Open FAQ assistant"}
         aria-label={open ? "Close FAQ assistant" : "Open FAQ assistant"}
         data-testid="faq-assistant-toggle"
       >
-        {open ? <X size={19} /> : <MessageCircle size={20} />}
+        {open ? <X size={22} /> : <MessageCircle size={24} />}
       </button>
     </div>
   );

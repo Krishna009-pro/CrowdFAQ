@@ -66,6 +66,7 @@ const vectorSearch = async (query) => {
         tags: 1,
         status: 1,
         answers: 1,
+        slug: 1,
         vectorScore: { $meta: "vectorSearchScore" },
       },
     },
@@ -203,7 +204,7 @@ const buildContext = (docs) => {
     if (contextText.length + chunk.length > MAX_CONTEXT_CHARS) break;
 
     contextText += chunk + "\n";
-    citations.push({ title: doc.title, id: doc._id?.toString() });
+    citations.push({ title: doc.title, id: doc._id?.toString(), slug: doc.slug });
   }
 
   return { contextText: contextText.trim(), citations };
