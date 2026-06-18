@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bot, ExternalLink, Loader2, MessageCircle, Send, User, X, BookOpen } from "lucide-react";
+import api from "@/lib/api";
 
 type ChatRole = "assistant" | "user";
 
@@ -18,7 +19,6 @@ type ChatMessage = {
   matches?: Citation[];
 };
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 const starterMessage: ChatMessage = {
   id: "assistant-starter",
@@ -72,16 +72,10 @@ export const FaqAssistant = () => {
         .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({ role: m.role, text: m.text }));
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/ai/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ message: trimmedInput, history }),
-      });
+      const res = await api.post("/ai/chat", { message: trimmedInput, history });
+      const payload = res.data;
 
-      const payload = await response.json();
-
-      if (!response.ok || !payload.success) {
+      if (!payload.success) {
         throw new Error(payload?.error?.message || "FAQ assistant is unavailable");
       }
 
@@ -95,15 +89,20 @@ export const FaqAssistant = () => {
         },
       ]);
     } catch (error) {
+      let errorMessage = "FAQ assistant is unavailable right now. Please try again in a moment.";
+      if (error && typeof error === "object" && "response" in error) {
+        const responseData = (error as any).response?.data;
+        errorMessage = responseData?.error?.message || responseData?.message || (error as any).message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setMessages((current) => [
         ...current,
         {
           id: buildId(),
           role: "assistant",
-          text:
-            error instanceof Error
-              ? error.message
-              : "FAQ assistant is unavailable right now. Please try again in a moment.",
+          text: errorMessage,
         },
       ]);
     } finally {

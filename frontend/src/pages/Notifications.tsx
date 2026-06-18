@@ -48,7 +48,10 @@ export default function Notifications() {
     if (!user) return;
 
     // Connect to the socket server
-    const socket = io("http://localhost:5000");
+    const socketUrl = process.env.REACT_APP_API_BASE_URL
+      ? process.env.REACT_APP_API_BASE_URL.replace(/\/api\/v1\/?$/, "")
+      : "http://localhost:5000";
+    const socket = io(socketUrl);
 
     // Join room for user's own updates if user exists
     socket.emit("join_question", user._id);
