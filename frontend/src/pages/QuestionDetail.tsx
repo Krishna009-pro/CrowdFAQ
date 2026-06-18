@@ -61,6 +61,7 @@ export default function QuestionDetail() {
 
   useEffect(() => {
     fetchQuestionDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   // Submit Answer

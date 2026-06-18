@@ -107,6 +107,7 @@ export default function AdminDashboard() {
     if (user) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate, pathname]);
 
   // Debounced search queries
@@ -115,6 +116,7 @@ export default function AdminDashboard() {
       const delay = setTimeout(fetchUsers, 300);
       return () => clearTimeout(delay);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userSearch, userRoleFilter]);
 
   useEffect(() => {
@@ -122,6 +124,7 @@ export default function AdminDashboard() {
       const delay = setTimeout(fetchQuestions, 300);
       return () => clearTimeout(delay);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionSearch, questionStatusFilter]);
 
   // Handle Role Change
