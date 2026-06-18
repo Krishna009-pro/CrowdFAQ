@@ -85,6 +85,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user && !isModOrAdmin) {
       toast.error("Access denied. Admin privileges required.");
@@ -111,6 +112,7 @@ export default function AdminDashboard() {
   }, [user, navigate, pathname]);
 
   // Debounced search queries
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pathname === "/admin/users" && !loading) {
       const delay = setTimeout(fetchUsers, 300);
@@ -119,6 +121,7 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userSearch, userRoleFilter]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pathname === "/admin/questions" && !loading) {
       const delay = setTimeout(fetchQuestions, 300);

@@ -59,6 +59,7 @@ export default function QuestionDetail() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchQuestionDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
