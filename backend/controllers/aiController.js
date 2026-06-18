@@ -188,20 +188,45 @@ const askChatbot = async (req, res, next) => {
       });
     }
 
-    const { answer, citations, meta } = await ragChat(message, history);
+    try {
+      const { answer, citations, meta } = await ragChat(message, history);
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        answer,
-        citations,
-        meta,
-        // legacy field kept for backward compat
-        matches: citations,
-        aiFallback: !meta.hasContext,
-        fallbackReason: !meta.hasContext ? "No relevant documents found" : null,
-      },
-    });
+      return res.status(200).json({
+        success: true,
+        data: {
+          answer,
+          citations,
+          meta,
+          // legacy field kept for backward compat
+          matches: citations,
+          aiFallback: !meta.hasContext || meta.vectorFailed,
+          fallbackReason: !meta.hasContext
+            ? "No relevant documents found"
+            : (meta.vectorFailed ? "Vector search failed" : null),
+        },
+      });
+    } catch (error) {
+      // Graceful fallback to text matching and pre-defined response builder if RAG fails
+      const matches = await findTextMatches(message, 3);
+      const answer = buildFallbackAnswer(matches);
+      return res.status(200).json({
+        success: true,
+        data: {
+          answer,
+          citations: matches.map((m) => ({ title: m.title, id: m._id, slug: m.slug })),
+          meta: {
+            documentsRetrieved: matches.length,
+            vectorCount: 0,
+            keywordCount: matches.length,
+            vectorFailed: true,
+            hasContext: matches.length > 0,
+          },
+          matches: matches.map((m) => ({ title: m.title, id: m._id, slug: m.slug })),
+          aiFallback: true,
+          fallbackReason: error.message,
+        },
+      });
+    }
   } catch (error) {
     return next(error);
   }

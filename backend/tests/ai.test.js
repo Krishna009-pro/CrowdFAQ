@@ -7,6 +7,11 @@ jest.mock("../services/aiService", () => ({
   summarizeAnswers: jest.fn(),
 }));
 
+jest.mock("../services/groqService", () => ({
+  groqChatWithHistory: jest.fn(),
+  GROQ_CHAT_MODEL: "llama-3.3-70b-versatile",
+}));
+
 jest.mock("../models/Question", () => ({
   aggregate: jest.fn(),
   find: jest.fn(),
@@ -20,9 +25,11 @@ jest.mock("../models/Answer", () => ({
 const Answer = require("../models/Answer");
 const Question = require("../models/Question");
 const {
-  generateChatbotAnswer,
   generateEmbedding,
 } = require("../services/aiService");
+const {
+  groqChatWithHistory,
+} = require("../services/groqService");
 const aiRoutes = require("../routes/aiRoutes");
 const { errorHandler } = require("../middleware/errorHandler");
 
@@ -65,17 +72,17 @@ describe("AI API", () => {
   });
 
   it("returns a Gemini-generated FAQ assistant answer with vector context", async () => {
-    generateEmbedding.mockResolvedValue(new Array(768).fill(0.1));
+    generateEmbedding.mockResolvedValue(new Array(3072).fill(0.1));
     Question.aggregate.mockResolvedValue([
       {
         _id: "507f1f77bcf86cd799439014",
         title: "How do I reset my password?",
         body: "Password reset steps",
         answers: [{ body: "Use forgot password on the login page." }],
-        score: 0.92,
+        vectorScore: 0.92,
       },
     ]);
-    generateChatbotAnswer.mockResolvedValue("Use the forgot password link on the login page.");
+    groqChatWithHistory.mockResolvedValue("Use the forgot password link on the login page.");
 
     const res = await request(app)
       .post("/api/v1/ai/chat")
@@ -86,15 +93,20 @@ describe("AI API", () => {
     expect(res.body.data.answer).toBe("Use the forgot password link on the login page.");
     expect(res.body.data.matches).toHaveLength(1);
     expect(res.body.data.aiFallback).toBe(false);
-    expect(generateChatbotAnswer).toHaveBeenCalledWith({
-      query: "I forgot my password",
-      contextText: expect.stringContaining("How do I reset my password?"),
-    });
+    expect(groqChatWithHistory).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "user",
+          content: expect.stringContaining("How do I reset my password?"),
+        }),
+      ]),
+      400
+    );
   });
 
   it("falls back to text matches when Gemini is not configured", async () => {
     generateEmbedding.mockRejectedValue(new Error("GEMINI_API_KEY is required"));
-    generateChatbotAnswer.mockRejectedValue(new Error("GEMINI_API_KEY is required"));
+    groqChatWithHistory.mockRejectedValue(new Error("Groq API error"));
     Question.aggregate.mockResolvedValue([]);
     mockQuestionTextSearch([
       {
@@ -122,7 +134,7 @@ describe("AI API", () => {
   });
 
   it("checks duplicate questions using the vector score thresholds", async () => {
-    generateEmbedding.mockResolvedValue(new Array(768).fill(0.2));
+    generateEmbedding.mockResolvedValue(new Array(3072).fill(0.2));
     Question.aggregate.mockResolvedValue([
       {
         _id: "507f1f77bcf86cd799439014",
