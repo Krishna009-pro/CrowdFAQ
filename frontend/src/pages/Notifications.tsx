@@ -49,7 +49,7 @@ export default function Notifications() {
 
     // Connect to the socket server
     const socketUrl = process.env.REACT_APP_API_BASE_URL
-      ? process.env.REACT_APP_API_BASE_URL.replace(/\/api\/v1\/?$/, "")
+      ? (process.env.REACT_APP_API_BASE_URL === "/api" ? "https://crowdfaq-api.onrender.com" : process.env.REACT_APP_API_BASE_URL.replace(/\/api\/v1\/?$/, ""))
       : "http://localhost:5000";
     const socket = io(socketUrl);
 
