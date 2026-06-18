@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { calculateAndStoreUserBadges } = require("./userController");
 
 // Helper: create JWT token
 const generateToken = (userId) => {
@@ -144,6 +145,9 @@ const getMe = async (req, res, next) => {
         },
       });
     }
+
+    // Dynamically calculate and store badges
+    await calculateAndStoreUserBadges(user);
 
     res.status(200).json({
       success: true,

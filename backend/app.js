@@ -39,9 +39,28 @@ const userRoutes = require("./routes/userRoutes");
 // Routes for real-time notifications.
 const notificationRoutes = require("./routes/notificationRoutes");
 
+// Routes for public-facing flagging/reporting.
+const reportRoutes = require("./routes/reportRoutes");
+
 
 // Creates the Express app instance.
 const app = express();
+
+// Ensures database connection is established in serverless/Vercel environments (skipped in test)
+if (process.env.NODE_ENV !== "test") {
+  const mongoose = require("mongoose");
+  const { connectToDatabase } = require("./config/db");
+  app.use(async (req, res, next) => {
+    if (mongoose.connection.readyState !== 1) {
+      try {
+        await connectToDatabase();
+      } catch (err) {
+        console.error("Database connection failed in serverless middleware:", err.message);
+      }
+    }
+    next();
+  });
+}
 
 
 // Enables cross-origin frontend requests using the shared CORS rules.
@@ -77,6 +96,9 @@ app.use("/api/v1/users", userRoutes);
 
 // Mounts notification endpoints under /api/v1/notifications.
 app.use("/api/v1/notifications", notificationRoutes);
+
+// Mounts public-facing report endpoints under /api/v1/reports.
+app.use("/api/v1/reports", reportRoutes);
 
 // Mounts admin moderation endpoints under /api/v1/admin.
 app.use("/api/v1/admin", adminRoutes);

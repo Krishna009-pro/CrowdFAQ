@@ -73,6 +73,14 @@ const userSchema = new mongoose.Schema(
     emailVerificationExpire: Date,
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    followedQuestions: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
+      default: [],
+    },
+    bookmarkedQuestions: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
+      default: [],
+    },
   },
   {
     timestamps: true,

@@ -391,12 +391,28 @@ const getQuestionById = async (req, res, next) => {
       .select("-embedding")
       .populate("author", "displayName role reputationScore avatar title handle")
       .populate({
-        path:    "answers",
-        options: { sort: { isAccepted: -1, createdAt: 1 } },
+        path: "comments",
         populate: {
-          path:   "author",
+          path: "author",
           select: "displayName role reputationScore avatar title handle",
         },
+      })
+      .populate({
+        path:    "answers",
+        options: { sort: { isAccepted: -1, createdAt: 1 } },
+        populate: [
+          {
+            path:   "author",
+            select: "displayName role reputationScore avatar title handle",
+          },
+          {
+            path: "comments",
+            populate: {
+              path: "author",
+              select: "displayName role reputationScore avatar title handle",
+            },
+          },
+        ],
       });
 
     if (!question) {
@@ -406,9 +422,25 @@ const getQuestionById = async (req, res, next) => {
       });
     }
 
+    let isFollowing = false;
+    let isBookmarked = false;
+
+    if (req.user) {
+      isFollowing = req.user.followedQuestions?.some(
+        (qId) => qId.toString() === question._id.toString()
+      ) || false;
+      isBookmarked = req.user.bookmarkedQuestions?.some(
+        (qId) => qId.toString() === question._id.toString()
+      ) || false;
+    }
+
+    const questionObj = question.toObject();
+    questionObj.isFollowing = isFollowing;
+    questionObj.isBookmarked = isBookmarked;
+
     return res.status(200).json({
       success: true,
-      data: { question },
+      data: { question: questionObj },
     });
   } catch (error) {
     return next(error);
@@ -682,6 +714,92 @@ const voteQuestion = async (req, res, next) => {
   }
 };
 
+const followQuestion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Question id must be a valid MongoDB ObjectId" },
+      });
+    }
+
+    const questionExists = await Question.exists({ _id: id });
+    if (!questionExists) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Question not found" },
+      });
+    }
+
+    const user = await User.findById(userId);
+    const index = user.followedQuestions.indexOf(id);
+
+    let isFollowing = false;
+    if (index > -1) {
+      user.followedQuestions.splice(index, 1);
+    } else {
+      user.followedQuestions.push(id);
+      isFollowing = true;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: isFollowing ? "Subscribed to question updates" : "Unsubscribed from question updates",
+      isFollowing,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const bookmarkQuestion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Question id must be a valid MongoDB ObjectId" },
+      });
+    }
+
+    const questionExists = await Question.exists({ _id: id });
+    if (!questionExists) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Question not found" },
+      });
+    }
+
+    const user = await User.findById(userId);
+    const index = user.bookmarkedQuestions.indexOf(id);
+
+    let isBookmarked = false;
+    if (index > -1) {
+      user.bookmarkedQuestions.splice(index, 1);
+    } else {
+      user.bookmarkedQuestions.push(id);
+      isBookmarked = true;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: isBookmarked ? "Question saved successfully" : "Question removed from saved",
+      isBookmarked,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -691,4 +809,6 @@ module.exports = {
   editQuestion,
   deleteQuestion,
   voteQuestion,
+  followQuestion,
+  bookmarkQuestion,
 };

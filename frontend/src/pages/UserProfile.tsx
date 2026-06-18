@@ -217,32 +217,38 @@ export default function UserProfile() {
         )}
 
         {tab === "badges" && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(u.badges && u.badges.length > 0 ? u.badges : ["Early Adopter", "Storyteller"]).map((badgeName: string) => {
-              const badgesMeta: Record<string, { desc: string, tier: string }> = {
-                "Curator": { desc: "Edited 25+ questions for clarity", tier: "Gold" },
-                "Trusted Source": { desc: "10+ accepted answers in Engineering", tier: "Gold" },
-                "Early Adopter": { desc: "Joined in the first 1,000 members", tier: "Silver" },
-                "Mentor": { desc: "Answered 50+ questions", tier: "Silver" },
-                "Sleuth": { desc: "Resolved 5 reported issues", tier: "Bronze" },
-                "Storyteller": { desc: "Wrote an answer over 500 words", tier: "Bronze" },
-                "verified": { desc: "Verified system account badge", tier: "Gold" },
-                "founder": { desc: "Founder of CrowdFAQ knowledge base", tier: "Gold" },
-              };
-              const b = badgesMeta[badgeName] || { desc: "Awarded for contributions to CrowdFAQ", tier: "Bronze" };
+          u.badges && u.badges.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {u.badges.map((badgeName: string) => {
+                const badgesMeta: Record<string, { desc: string, tier: string }> = {
+                  "Curator": { desc: "Edited 25+ questions for clarity", tier: "Gold" },
+                  "Trusted Source": { desc: "10+ accepted answers in Engineering", tier: "Gold" },
+                  "Early Adopter": { desc: "Joined in the first 1,000 members", tier: "Silver" },
+                  "Mentor": { desc: "Answered 50+ questions", tier: "Silver" },
+                  "Sleuth": { desc: "Resolved 5 reported issues", tier: "Bronze" },
+                  "Storyteller": { desc: "Wrote an answer over 500 words", tier: "Bronze" },
+                  "verified": { desc: "Verified system account badge", tier: "Gold" },
+                  "founder": { desc: "Founder of CrowdFAQ knowledge base", tier: "Gold" },
+                };
+                const b = badgesMeta[badgeName] || { desc: "Awarded for contributions to CrowdFAQ", tier: "Bronze" };
 
-              return (
-                <div key={badgeName} className="border border-brand-line bg-white p-6" data-testid={`badge-${badgeName.toLowerCase()}`}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <Award size={20} className={b.tier === 'Gold' ? 'text-brand-gold' : b.tier === 'Silver' ? 'text-brand-mute' : 'text-[#8B6E4E]'} />
-                    <p className="label-eyebrow">{b.tier}</p>
+                return (
+                  <div key={badgeName} className="border border-brand-line bg-white p-6" data-testid={`badge-${badgeName.toLowerCase()}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <Award size={20} className={b.tier === 'Gold' ? 'text-brand-gold' : b.tier === 'Silver' ? 'text-brand-mute' : 'text-[#8B6E4E]'} />
+                      <p className="label-eyebrow">{b.tier}</p>
+                    </div>
+                    <p className="font-serif text-2xl text-brand-ink leading-tight mb-1">{badgeName}</p>
+                    <p className="text-sm text-brand-body">{b.desc}</p>
                   </div>
-                  <p className="font-serif text-2xl text-brand-ink leading-tight mb-1">{badgeName}</p>
-                  <p className="text-sm text-brand-body">{b.desc}</p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-brand-mute bg-white border border-brand-line">
+              No badges earned yet.
+            </div>
+          )
         )}
       </section>
     </PageShell>

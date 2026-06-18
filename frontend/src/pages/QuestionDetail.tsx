@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { PageShell } from "@/components/layout/PageShell";
+import CommentBlock from "@/components/CommentBlock";
 import { userById, timeAgo } from "@/lib/mockData";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
@@ -17,6 +18,13 @@ export default function QuestionDetail() {
   const [answerInput, setAnswerInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
+
+  // Flag/Report States
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportType, setReportType] = useState<"question" | "answer" | null>(null);
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState("Spam / promotional");
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   // Fetch question and answers
   const fetchQuestionDetails = async () => {
@@ -130,6 +138,73 @@ export default function QuestionDetail() {
     }
   };
 
+  // Follow/Unfollow Question
+  const handleFollow = async () => {
+    if (!user) {
+      toast.error("Please sign in to follow questions.");
+      return;
+    }
+    try {
+      const res = await api.post(`/questions/${q._id || q.id}/follow`);
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setQ((current: any) => ({
+          ...current,
+          isFollowing: res.data.isFollowing,
+        }));
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Failed to update subscription.");
+    }
+  };
+
+  // Bookmark/Unbookmark Question
+  const handleBookmark = async () => {
+    if (!user) {
+      toast.error("Please sign in to save questions.");
+      return;
+    }
+    try {
+      const res = await api.post(`/questions/${q._id || q.id}/bookmark`);
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setQ((current: any) => ({
+          ...current,
+          isBookmarked: res.data.isBookmarked,
+        }));
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Failed to update bookmark.");
+    }
+  };
+
+  // Submit Content Report
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in to submit a report.");
+      return;
+    }
+    if (!reportReason || !reportTargetId || !reportType) return;
+    setSubmittingReport(true);
+    try {
+      const res = await api.post("/reports", {
+        target: reportTargetId,
+        type: reportType,
+        reason: reportReason,
+      });
+      if (res.data.success) {
+        toast.success("Content reported successfully. A moderator will review it.");
+        setShowReportModal(false);
+        setReportReason("Spam / promotional");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error?.message || "Failed to submit report.");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageShell>
@@ -209,7 +284,21 @@ export default function QuestionDetail() {
               <span className="flex items-center gap-2"><MessageSquare size={14} />{qAnswers.length} answers</span>
               <span className="flex items-center gap-2"><Eye size={14} />{viewsCount.toLocaleString()} views</span>
               <button className="flex items-center gap-2 hover:text-brand-ink" data-testid="share-btn"><Share2 size={14} />Share</button>
-              <button className="flex items-center gap-2 hover:text-brand-ink" data-testid="bookmark-btn"><Bookmark size={14} />Save</button>
+              <button
+                onClick={handleFollow}
+                className={`flex items-center gap-2 transition-colors ${q.isFollowing ? "text-brand-blue font-semibold" : "hover:text-brand-ink"}`}
+              >
+                <Eye size={14} />
+                {q.isFollowing ? "Following" : "Follow"}
+              </button>
+              <button
+                onClick={handleBookmark}
+                className={`flex items-center gap-2 transition-colors ${q.isBookmarked ? "text-brand-blue font-semibold" : "hover:text-brand-ink"}`}
+                data-testid="bookmark-btn"
+              >
+                <Bookmark size={14} fill={q.isBookmarked ? "currentColor" : "none"} />
+                {q.isBookmarked ? "Saved" : "Save"}
+              </button>
             </div>
           </div>
         </div>
@@ -232,8 +321,24 @@ export default function QuestionDetail() {
               </div>
               <div className="flex gap-3 text-xs uppercase tracking-widest text-brand-mute pb-4 border-b border-brand-line">
                 <button className="hover:text-brand-ink flex items-center gap-1.5"><Share2 size={12} />Share</button>
-                <button className="hover:text-brand-ink flex items-center gap-1.5"><Flag size={12} />Report</button>
+                <button
+                  onClick={() => {
+                    setReportType("question");
+                    setReportTargetId(q._id || q.id);
+                    setReportReason("Spam / promotional");
+                    setShowReportModal(true);
+                  }}
+                  className="hover:text-brand-ink flex items-center gap-1.5"
+                >
+                  <Flag size={12} />Report
+                </button>
               </div>
+              <CommentBlock
+                comments={q.comments}
+                parentType="Question"
+                parentId={q._id || q.id}
+                onCommentAdded={fetchQuestionDetails}
+              />
             </div>
           </div>
 
@@ -311,8 +416,25 @@ export default function QuestionDetail() {
                               </button>
                             )}
                             <button className="hover:text-brand-ink">Share</button>
+                            <button
+                              onClick={() => {
+                                setReportType("answer");
+                                setReportTargetId(a._id || a.id);
+                                setReportReason("Spam / promotional");
+                                setShowReportModal(true);
+                              }}
+                              className="hover:text-brand-ink flex items-center gap-1"
+                            >
+                              <Flag size={11} />Report
+                            </button>
                           </div>
                         </div>
+                        <CommentBlock
+                          comments={a.comments}
+                          parentType="Answer"
+                          parentId={a._id || a.id}
+                          onCommentAdded={fetchQuestionDetails}
+                        />
                       </div>
                     </div>
                   </div>
@@ -375,6 +497,47 @@ export default function QuestionDetail() {
           </div>
         </aside>
       </section>
+
+      {/* Flag/Report Content Modal Overlay */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-brand-line w-full max-w-md p-6 shadow-2xl">
+            <h3 className="font-serif text-2xl text-brand-ink mb-4">Report Content</h3>
+            <form onSubmit={handleReportSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-brand-mute mb-2 font-bold">Reason</label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full border border-brand-line p-2.5 text-sm bg-[#FAF9F7] outline-none focus:border-brand-ink"
+                >
+                  <option value="Spam / promotional">Spam / promotional</option>
+                  <option value="Misinformation">Misinformation</option>
+                  <option value="Duplicate">Duplicate</option>
+                  <option value="Off-topic">Off-topic</option>
+                  <option value="Low quality">Low quality</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="border border-brand-line px-4 py-2 text-xs uppercase tracking-wider hover:bg-[#FAF9F7] font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="bg-brand-ink text-brand-paper hover:bg-brand-blue px-4 py-2 text-xs uppercase tracking-wider disabled:opacity-50 font-bold flex items-center justify-center min-w-[120px]"
+                >
+                  {submittingReport ? <Loader2 className="animate-spin w-4 h-4" /> : "Submit Report"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 }

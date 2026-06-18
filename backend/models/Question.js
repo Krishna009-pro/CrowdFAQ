@@ -136,4 +136,11 @@ questionSchema.virtual("answers", {
   foreignField: "question",
 });
 
+questionSchema.virtual("comments", {
+  ref:          "Comment",
+  localField:   "_id",
+  foreignField: "parentId",
+  match:        { parentType: "Question" },
+});
+
 module.exports = mongoose.model("Question", questionSchema);

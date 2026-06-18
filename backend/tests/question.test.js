@@ -17,6 +17,9 @@ jest.mock("../middleware/authMiddleware", () => ({
     };
     next();
   },
+  optionalProtect: (req, res, next) => {
+    next();
+  },
 }));
 
 jest.mock("../services/aiService", () => ({
