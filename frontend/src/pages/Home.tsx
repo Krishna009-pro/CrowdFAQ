@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PageShell } from "@/components/layout/PageShell";
 import { QuestionCard } from "@/components/QuestionCard";
-import { questions, categories, users, timeAgo } from "@/lib/mockData";
-import { Flame, ArrowRight, Sparkles, TrendingUp, ShieldCheck } from "lucide-react";
+import { categories, users } from "@/lib/mockData";
+import { Flame, ArrowRight, Sparkles, TrendingUp, ShieldCheck, Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 const filters = [
   { key: "latest", label: "Latest" },
@@ -14,13 +15,36 @@ const filters = [
 
 export default function Home() {
   const [active, setActive] = useState("latest");
-  const filtered = questions.filter((q) => {
-    if (active === "latest") return true;
-    if (active === "trending") return q.votes > 60;
-    if (active === "verified") return q.status === "verified";
-    if (active === "unanswered") return q.status === "unanswered";
-    return true;
-  });
+  const [questionsList, setQuestionsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      setLoading(true);
+      try {
+        const params: any = {};
+        if (active === "latest") {
+          params.sort = "latest";
+        } else if (active === "trending") {
+          params.sort = "popular";
+        } else if (active === "verified") {
+          params.status = "verified";
+        } else if (active === "unanswered") {
+          params.sort = "unanswered";
+        }
+
+        const res = await api.get("/questions", { params });
+        if (res.data.success && res.data.data.questions) {
+          setQuestionsList(res.data.data.questions);
+        }
+      } catch (err) {
+        console.error("Failed to fetch questions:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, [active]);
 
   return (
     <PageShell>
@@ -83,13 +107,22 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="border-x border-b border-brand-line">
-            {filtered.map((q) => <QuestionCard key={q.id} q={q} />)}
-            {filtered.length === 0 && (
-              <div className="p-12 text-center" data-testid="feed-empty">
-                <p className="font-serif text-2xl text-brand-ink mb-2">Nothing here yet.</p>
-                <p className="text-brand-body text-sm">Be the first to ask a question in this slice.</p>
+          <div className="border-x border-b border-brand-line min-h-[200px] relative">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-brand-mute gap-3">
+                <Loader2 className="animate-spin" size={24} />
+                <p className="text-sm font-semibold uppercase tracking-wider">Loading live feed...</p>
               </div>
+            ) : (
+              <>
+                {questionsList.map((q) => <QuestionCard key={q._id || q.id} q={q} />)}
+                {questionsList.length === 0 && (
+                  <div className="p-12 text-center" data-testid="feed-empty">
+                    <p className="font-serif text-2xl text-brand-ink mb-2">Nothing here yet.</p>
+                    <p className="text-brand-body text-sm">Be the first to ask a question in this slice.</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -118,7 +151,7 @@ export default function Home() {
               {users.slice(0, 4).map((u, i) => (
                 <li key={u.id} className="flex items-center gap-3">
                   <span className="font-sans font-medium text-brand-mute text-sm w-5">{String(i + 1).padStart(2, '0')}</span>
-                  <img src={u.avatar} alt={u.name} className="w-9 h-9 object-cover" />
+                  <img src={u.avatar} alt={u.name} className="w-9 h-9 object-cover rounded-full" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-brand-ink truncate">{u.name}</p>
                     <p className="text-[10px] uppercase tracking-widest text-brand-mute">{u.title}</p>

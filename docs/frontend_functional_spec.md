@@ -1,7 +1,7 @@
 # Software Requirement Specification (SRS)
 ## Frontend Functional Outline & API Contracts
 
-This specification document outlines the routing, user flows, components, validation rules, and API request/response contracts for the frontend application of the **CrowdFAQ** platform. It is designed to serve as a contract between the Frontend Team (Team B) and the Backend Team (Team A) and AI/QA Team (Team C).
+This specification document outlines the routing, user flows, components, validation rules, and API request/response contracts for the frontend application of the **CrowdFAQ** platform. It is designed to serve as a contract between the Frontend Team (Team A) and the Backend Team (Team B) and AI/QA Team (Team C).
 
 ---
 

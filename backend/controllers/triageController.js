@@ -1,5 +1,5 @@
 const Question = require("../models/Question");
-const { generateEmbedding } = require("../services/openaiService");
+const { generateEmbedding } = require("../services/aiService");
 
 const HARD_INTERCEPT_THRESHOLD = 0.9;
 const SOFT_INTERCEPT_THRESHOLD = 0.75;
@@ -37,8 +37,8 @@ const searchAndTriage = async (req, res, next) => {
     let embedding;
     try {
       embedding = await generateEmbedding(query);
-    } catch (openAiError) {
-      console.warn("OpenAI Embedding failed, falling back to empty vector triage:", openAiError.message);
+    } catch (aiError) {
+      console.warn("Gemini embedding failed, falling back to empty vector triage:", aiError.message);
       // Fallback: If AI is down, we can't do vector search, so we return zero matches
       // but allow the request to proceed so the user can still post.
       return res.status(200).json({

@@ -17,9 +17,12 @@ jest.mock("../middleware/authMiddleware", () => ({
     };
     next();
   },
+  optionalProtect: (req, res, next) => {
+    next();
+  },
 }));
 
-jest.mock("../services/openaiService", () => ({
+jest.mock("../services/aiService", () => ({
   generateEmbedding: jest.fn().mockResolvedValue([]),
   generateProvisionalDraft: jest.fn().mockResolvedValue("Draft answer"),
 }));

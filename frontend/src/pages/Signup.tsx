@@ -2,19 +2,26 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Mail, Lock, User, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Signup() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "" });
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const roles = ["Engineer", "Product / Design", "People Ops", "Finance / Legal", "Support", "Other"];
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (step === 1) return setStep(2);
-    toast.success("Welcome to the community.");
-    setTimeout(() => navigate("/"), 500);
+    try {
+      await register(form.name, form.email, form.password);
+      toast.success("Welcome to the community.");
+      setTimeout(() => navigate("/"), 500);
+    } catch (err: any) {
+      toast.error(err.message || "Registration failed");
+    }
   };
 
   return (

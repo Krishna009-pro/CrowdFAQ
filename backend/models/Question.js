@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const EMBEDDING_DIMENSIONS = 3072;
+
 const questionSchema = new mongoose.Schema(
   {
     title: {
@@ -32,9 +34,9 @@ const questionSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator(value) {
-          return value.length === 0 || value.length === 1536;
+          return value.length === 0 || value.length === EMBEDDING_DIMENSIONS;
         },
-        message: "Question embedding must contain 1536 dimensions",
+        message: `Question embedding must contain ${EMBEDDING_DIMENSIONS} dimensions`,
       },
     },
     duplicateOf: {
@@ -59,6 +61,21 @@ const questionSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    views: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    slug: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    excerpt: {
+      type: String,
+      trim: true,
+    },
     duplicateScore: {
       type: Number,
       default: null,
@@ -77,6 +94,21 @@ const questionSchema = new mongoose.Schema(
       ],
       default: "pending",
       index: true,
+    },
+    category: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    upvotedBy: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+      select: false,
+    },
+    downvotedBy: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+      select: false,
     },
   },
   {
@@ -102,6 +134,13 @@ questionSchema.virtual("answers", {
   ref:          "Answer",
   localField:   "_id",
   foreignField: "question",
+});
+
+questionSchema.virtual("comments", {
+  ref:          "Comment",
+  localField:   "_id",
+  foreignField: "parentId",
+  match:        { parentType: "Question" },
 });
 
 module.exports = mongoose.model("Question", questionSchema);

@@ -81,7 +81,11 @@ answerSchema.virtual("netVoteScore").get(function () {
   return this.upvoteCount - this.downvoteCount;
 });
 
-// Supports fetching answers for a question in creation order.
-answerSchema.index({ question: 1, createdAt: 1 });
+answerSchema.virtual("comments", {
+  ref:          "Comment",
+  localField:   "_id",
+  foreignField: "parentId",
+  match:        { parentType: "Answer" },
+});
 
 module.exports = mongoose.model("Answer", answerSchema);

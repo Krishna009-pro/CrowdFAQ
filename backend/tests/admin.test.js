@@ -43,9 +43,17 @@ jest.mock("../models/Answer", () => ({
   deleteMany: jest.fn(),
 }));
 
+jest.mock("../models/Report", () => ({
+  countDocuments: jest.fn(),
+  find: jest.fn(),
+  findByIdAndUpdate: jest.fn(),
+  findById: jest.fn(),
+}));
+
 const User = require("../models/User");
 const Question = require("../models/Question");
 const Answer = require("../models/Answer");
+const Report = require("../models/Report");
 const adminRoutes = require("../routes/adminRoutes");
 const { errorHandler } = require("../middleware/errorHandler");
 
@@ -125,6 +133,7 @@ describe("Admin API", () => {
     Answer.countDocuments
       .mockResolvedValueOnce(12)
       .mockResolvedValueOnce(2);
+    Report.countDocuments.mockResolvedValueOnce(3);
     User.aggregate.mockResolvedValue([
       { _id: "student", count: 2 },
       { _id: "admin", count: 1 },
@@ -138,6 +147,7 @@ describe("Admin API", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data.totals.users).toBe(4);
+    expect(res.body.data.totals.pendingReports).toBe(3);
     expect(res.body.data.questionsByStatus.resolved).toBe(6);
   });
 
@@ -293,5 +303,55 @@ describe("Admin API", () => {
     expect(question.status).toBe("pending");
     expect(question.acceptedAnswerId).toBeNull();
     expect(question.save).toHaveBeenCalled();
+  });
+
+  it("lists reports for moderation", async () => {
+    const mockReports = [
+      {
+        _id: "507f1f77bcf86cd799439017",
+        reporter: "507f1f77bcf86cd799439014",
+        type: "question",
+        target: questionId,
+        reason: "spam",
+        status: "pending",
+      },
+    ];
+
+    Report.find.mockReturnValue({
+      populate: jest.fn().mockReturnThis(),
+      sort: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue(mockReports),
+    });
+
+    Question.findById.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      lean: jest.fn().mockResolvedValue({ title: "Spam Question", body: "This is spam" }),
+    });
+
+    const res = await request(app).get("/api/v1/admin/reports?status=pending");
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.reports).toHaveLength(1);
+    expect(res.body.data.reports[0].targetDetail.title).toBe("Spam Question");
+  });
+
+  it("updates report status", async () => {
+    const mockReport = {
+      _id: "507f1f77bcf86cd799439017",
+      status: "resolved",
+    };
+
+    Report.findByIdAndUpdate.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(mockReport),
+    });
+
+    const res = await request(app)
+      .patch("/api/v1/admin/reports/507f1f77bcf86cd799439017")
+      .send({ status: "resolved" });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.report.status).toBe("resolved");
   });
 });

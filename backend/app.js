@@ -15,6 +15,9 @@ const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 // Routes for admin moderation, dashboard stats, and content management.
 const adminRoutes = require("./routes/adminRoutes");
 
+// Routes for Gemini-backed duplicate checks, summaries, and FAQ assistant chat.
+const aiRoutes = require("./routes/aiRoutes");
+
 // Routes for answer creation, voting, accepting, and official answers.
 const answerRoutes = require("./routes/answerRoutes");
 
@@ -33,9 +36,31 @@ const searchRoutes = require("./routes/searchRoutes");
 // Routes for user profiles and user-owned content.
 const userRoutes = require("./routes/userRoutes");
 
+// Routes for real-time notifications.
+const notificationRoutes = require("./routes/notificationRoutes");
+
+// Routes for public-facing flagging/reporting.
+const reportRoutes = require("./routes/reportRoutes");
+
 
 // Creates the Express app instance.
 const app = express();
+
+// Ensures database connection is established in serverless/Vercel environments (skipped in test)
+if (process.env.NODE_ENV !== "test") {
+  const mongoose = require("mongoose");
+  const { connectToDatabase } = require("./config/db");
+  app.use(async (req, res, next) => {
+    if (mongoose.connection.readyState !== 1) {
+      try {
+        await connectToDatabase();
+      } catch (err) {
+        console.error("Database connection failed in serverless middleware:", err.message);
+      }
+    }
+    next();
+  });
+}
 
 
 // Enables cross-origin frontend requests using the shared CORS rules.
@@ -51,6 +76,9 @@ app.use(cookieParser());
 // Mounts root and health endpoints.
 app.use("/", healthRoutes);
 
+// Mounts Gemini-backed AI endpoints under /api/v1/ai.
+app.use("/api/v1/ai", aiRoutes);
+
 // Mounts search endpoints under /api/v1/search.
 app.use("/api/v1/search", searchRoutes);
 
@@ -65,6 +93,12 @@ app.use("/api/v1/auth", authRoutes);
 
 // Mounts user profile endpoints under /api/v1/users.
 app.use("/api/v1/users", userRoutes);
+
+// Mounts notification endpoints under /api/v1/notifications.
+app.use("/api/v1/notifications", notificationRoutes);
+
+// Mounts public-facing report endpoints under /api/v1/reports.
+app.use("/api/v1/reports", reportRoutes);
 
 // Mounts admin moderation endpoints under /api/v1/admin.
 app.use("/api/v1/admin", adminRoutes);

@@ -1,7 +1,7 @@
 const express = require("express");
 const request = require("supertest");
 
-jest.mock("../services/openaiService", () => ({
+jest.mock("../services/aiService", () => ({
   generateEmbedding: jest.fn(),
   generateProvisionalDraft: jest.fn(),
 }));
@@ -12,7 +12,7 @@ jest.mock("../models/Question", () => ({
 }));
 
 const Question = require("../models/Question");
-const { generateEmbedding } = require("../services/openaiService");
+const { generateEmbedding } = require("../services/aiService");
 const searchRoutes = require("../routes/searchRoutes");
 const { errorHandler } = require("../middleware/errorHandler");
 
@@ -42,7 +42,7 @@ describe("Triage API", () => {
   });
 
   it("returns allow_post when no matches are found", async () => {
-    const mockVector = new Array(1536).fill(0);
+    const mockVector = new Array(768).fill(0);
     mockVector[0] = 0.1;
     generateEmbedding.mockResolvedValue(mockVector);
     Question.aggregate.mockResolvedValue([]);

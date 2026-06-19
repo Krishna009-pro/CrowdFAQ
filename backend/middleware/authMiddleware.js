@@ -78,4 +78,17 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+const optionalProtect = async (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (token && process.env.JWT_SECRET) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id);
+    }
+  } catch (err) {
+    // Ignore errors for optional authentication
+  }
+  return next();
+};
+
+module.exports = { protect, authorize, optionalProtect };

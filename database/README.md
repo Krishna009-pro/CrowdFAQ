@@ -8,7 +8,7 @@ The actual source of truth for schema details is:
 backend/models/User.js
 backend/models/Question.js
 backend/models/Answer.js
-backend/services/openaiService.js
+backend/services/aiService.js
 backend/seed.js
 ```
 
@@ -17,7 +17,7 @@ backend/seed.js
 - Database: MongoDB or MongoDB Atlas
 - ODM: Mongoose
 - Backend: Node.js + Express
-- AI search: OpenAI embeddings with MongoDB Atlas Vector Search
+- AI search: Gemini embeddings with MongoDB Atlas Vector Search
 
 ## Current Collections
 
@@ -92,7 +92,7 @@ Current fields:
 | `body` | String | Required, 10-5000 chars |
 | `author` | ObjectId | References `User`, required, indexed |
 | `tags` | String array | Indexed |
-| `embedding` | Number array | Optional, expected length `1536` when present |
+| `embedding` | Number array | Optional, expected length `768` when present |
 | `duplicateOf` | ObjectId | References another `Question`, optional |
 | `acceptedAnswerId` | ObjectId | References `Answer`, optional |
 | `upvoteCount` | Number | Defaults to `0` |
@@ -174,18 +174,18 @@ answerSchema.index({ question: 1, createdAt: 1 });
 
 ## Search And Embeddings
 
-The backend uses OpenAI embeddings for semantic search.
+The backend uses Gemini embeddings for semantic search.
 
 Current embedding model:
 
 ```text
-text-embedding-3-small
+gemini-embedding-001
 ```
 
 Current expected embedding dimensions:
 
 ```text
-1536
+768
 ```
 
 The backend stores the embedding on each question:
@@ -194,7 +194,7 @@ The backend stores the embedding on each question:
 Question.embedding
 ```
 
-When OpenAI is unavailable or no API key is configured, the current search controller falls back to text search behavior where possible.
+When Gemini is unavailable or no API key is configured, the current search controller falls back to text search behavior where possible.
 
 ## MongoDB Atlas Vector Search
 
@@ -214,7 +214,7 @@ Recommended configuration for the current backend:
     {
       "type": "vector",
       "path": "embedding",
-      "numDimensions": 1536,
+      "numDimensions": 768,
       "similarity": "cosine"
     }
   ]
@@ -403,7 +403,7 @@ Answers member:
   backend/models/Answer.js
 
 Search/AI member:
-  backend/services/openaiService.js
+  backend/services/aiService.js
   Question.embedding
 
 Admin/QA member:

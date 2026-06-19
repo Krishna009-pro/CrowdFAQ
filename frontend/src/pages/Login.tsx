@@ -2,16 +2,23 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    toast.success("Welcome back.");
-    setTimeout(() => navigate("/"), 500);
+    try {
+      await login(email, password);
+      toast.success("Welcome back.");
+      setTimeout(() => navigate("/"), 500);
+    } catch (err: any) {
+      toast.error(err.message || "Invalid email or password");
+    }
   };
 
   return (

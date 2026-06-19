@@ -2,10 +2,11 @@ const mongoose = require("mongoose");
 
 const Question = require("../models/Question");
 const Answer = require("../models/Answer");
+const User = require("../models/User");
 const {
   generateEmbedding,
   generateProvisionalDraft,
-} = require("../services/openaiService");
+} = require("../services/aiService");
 
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 200;
@@ -231,7 +232,7 @@ const createAiDraftForQuestion = async (question) => {
  */
 const createQuestion = async (req, res, next) => {
   try {
-    const { title, body, tags = [] } = req.body;
+    const { title, body, tags = [], category } = req.body;
     const authorId = req.user._id;
 
     if (!title || !body) {
@@ -249,10 +250,10 @@ const createQuestion = async (req, res, next) => {
     let embedding = [];
     try {
       embedding = await generateEmbedding(`${title} ${body}`);
-    } catch (openAiError) {
+    } catch (aiError) {
       console.warn(
-        "OpenAI Embedding failed during question creation. Saving without embedding.",
-        openAiError.message
+        "Gemini embedding failed during question creation. Saving without embedding.",
+        aiError.message
       );
     }
 
@@ -262,6 +263,7 @@ const createQuestion = async (req, res, next) => {
       author: authorId,
       tags:   normalizedTags,
       embedding,
+      category,
     });
 
     const responseQuestion = question.toObject();
@@ -340,7 +342,7 @@ const getQuestions = async (req, res, next) => {
           ],
         },
       },
-      { $unwind: { path: "$author", preserveNullAndEmpty: true } },
+      { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           embedding:    0, // never send embedding to clients
@@ -381,23 +383,36 @@ const getQuestionById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        error: { message: "Question id must be a valid MongoDB ObjectId" },
-      });
-    }
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id }
+      : { slug: id };
 
-    const question = await Question.findById(id)
+    const question = await Question.findOne(query)
       .select("-embedding")
-      .populate("author", "displayName role reputationScore")
+      .populate("author", "displayName role reputationScore avatar title handle")
+      .populate({
+        path: "comments",
+        populate: {
+          path: "author",
+          select: "displayName role reputationScore avatar title handle",
+        },
+      })
       .populate({
         path:    "answers",
         options: { sort: { isAccepted: -1, createdAt: 1 } },
-        populate: {
-          path:   "author",
-          select: "displayName role reputationScore",
-        },
+        populate: [
+          {
+            path:   "author",
+            select: "displayName role reputationScore avatar title handle",
+          },
+          {
+            path: "comments",
+            populate: {
+              path: "author",
+              select: "displayName role reputationScore avatar title handle",
+            },
+          },
+        ],
       });
 
     if (!question) {
@@ -407,9 +422,25 @@ const getQuestionById = async (req, res, next) => {
       });
     }
 
+    let isFollowing = false;
+    let isBookmarked = false;
+
+    if (req.user) {
+      isFollowing = req.user.followedQuestions?.some(
+        (qId) => qId.toString() === question._id.toString()
+      ) || false;
+      isBookmarked = req.user.bookmarkedQuestions?.some(
+        (qId) => qId.toString() === question._id.toString()
+      ) || false;
+    }
+
+    const questionObj = question.toObject();
+    questionObj.isFollowing = isFollowing;
+    questionObj.isBookmarked = isBookmarked;
+
     return res.status(200).json({
       success: true,
-      data: { question },
+      data: { question: questionObj },
     });
   } catch (error) {
     return next(error);
@@ -548,6 +579,227 @@ const deleteQuestion = async (req, res, next) => {
   }
 };
 
+// ─── Voting Helpers ─────────────────────────────────────────────────────────
+const idsEqual = (left, right) =>
+  left !== null &&
+  left !== undefined &&
+  right !== null &&
+  right !== undefined &&
+  String(left) === String(right);
+
+const hasUserVoted = (votes = [], userId) =>
+  votes.some((voteUserId) => idsEqual(voteUserId, userId));
+
+const ensureVoteArray = (question, field) => {
+  if (!question[field]) {
+    question[field] = [];
+  }
+  return question[field];
+};
+
+const addVote = (question, field, userId) => {
+  const votes = ensureVoteArray(question, field);
+  if (typeof votes.addToSet === "function") {
+    votes.addToSet(userId);
+  } else {
+    if (!hasUserVoted(votes, userId)) {
+      votes.push(userId);
+    }
+  }
+};
+
+const pullVote = (question, field, userId) => {
+  const votes = ensureVoteArray(question, field);
+  if (typeof votes.pull === "function") {
+    votes.pull(userId);
+  } else {
+    question[field] = votes.filter((voteUserId) => !idsEqual(voteUserId, userId));
+  }
+};
+
+/**
+ * POST /api/v1/questions/:id/vote
+ * Upvote or downvote a question.
+ */
+const voteQuestion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.body;
+    const voterId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Question id must be a valid MongoDB ObjectId" },
+      });
+    }
+
+    if (!["up", "down"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Vote type must be either 'up' or 'down'" },
+      });
+    }
+
+    const question = await Question.findById(id).select("+upvotedBy +downvotedBy");
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Question not found" },
+      });
+    }
+
+    const hasUpvoted = hasUserVoted(ensureVoteArray(question, "upvotedBy"), voterId);
+    const hasDownvoted = hasUserVoted(ensureVoteArray(question, "downvotedBy"), voterId);
+
+    if ((type === "up" && hasUpvoted) || (type === "down" && hasDownvoted)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "User has already cast this vote" },
+      });
+    }
+
+    let reputationDelta = 0;
+    if (type === "up") {
+      addVote(question, "upvotedBy", voterId);
+      question.upvoteCount += 1;
+
+      if (hasDownvoted) {
+        pullVote(question, "downvotedBy", voterId);
+        question.downvoteCount = Math.max(question.downvoteCount - 1, 0);
+      }
+      reputationDelta = 2; // Upvote on question gives 2 reputation points to author
+    } else {
+      addVote(question, "downvotedBy", voterId);
+      question.downvoteCount += 1;
+
+      if (hasUpvoted) {
+        pullVote(question, "upvotedBy", voterId);
+        question.upvoteCount = Math.max(question.upvoteCount - 1, 0);
+        reputationDelta = -2;
+      }
+    }
+
+    await question.save();
+
+    if (reputationDelta !== 0 && question.author) {
+      await User.findByIdAndUpdate(question.author, {
+        $inc: { reputationScore: reputationDelta },
+      });
+    }
+
+    // Emit event via Socket.IO
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("question_status_updated", {
+        questionId: question._id,
+        upvoteCount: question.upvoteCount,
+        downvoteCount: question.downvoteCount,
+      });
+    }
+
+    const responseQuestion = question.toObject();
+    delete responseQuestion.embedding;
+    delete responseQuestion.upvotedBy;
+    delete responseQuestion.downvotedBy;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        question: responseQuestion,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const followQuestion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Question id must be a valid MongoDB ObjectId" },
+      });
+    }
+
+    const questionExists = await Question.exists({ _id: id });
+    if (!questionExists) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Question not found" },
+      });
+    }
+
+    const user = await User.findById(userId);
+    const index = user.followedQuestions.indexOf(id);
+
+    let isFollowing = false;
+    if (index > -1) {
+      user.followedQuestions.splice(index, 1);
+    } else {
+      user.followedQuestions.push(id);
+      isFollowing = true;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: isFollowing ? "Subscribed to question updates" : "Unsubscribed from question updates",
+      isFollowing,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const bookmarkQuestion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Question id must be a valid MongoDB ObjectId" },
+      });
+    }
+
+    const questionExists = await Question.exists({ _id: id });
+    if (!questionExists) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Question not found" },
+      });
+    }
+
+    const user = await User.findById(userId);
+    const index = user.bookmarkedQuestions.indexOf(id);
+
+    let isBookmarked = false;
+    if (index > -1) {
+      user.bookmarkedQuestions.splice(index, 1);
+    } else {
+      user.bookmarkedQuestions.push(id);
+      isBookmarked = true;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: isBookmarked ? "Question saved successfully" : "Question removed from saved",
+      isBookmarked,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -556,4 +808,7 @@ module.exports = {
   getQuestionById,
   editQuestion,
   deleteQuestion,
+  voteQuestion,
+  followQuestion,
+  bookmarkQuestion,
 };

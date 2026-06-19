@@ -3,7 +3,7 @@ This plan details the implementation of Team C's AI capabilities, featuring Gemi
 ## User Review Required
 > [!IMPORTANT]
 > **Dependencies to Install**: We will install `@google/generative-ai` for Gemini API calls, `@xenova/transformers` (or `@huggingface/transformers` based on runtime compatibility) for offline 384-dimension embeddings, and `mongodb-memory-server` for isolated tests.
-> **Database Vector Search Index**: To support 384-dimension vector queries, a new MongoDB Vector Search index or a config update will be required to handle 384 dimensions on the collection's embeddings. We will modify the `Question` validation to allow both 1536 (OpenAI) and 384 (Xenova) dimensions.
+> **Database Vector Search Index**: The backend now standardizes on Gemini `text-embedding-004` vectors, so the MongoDB Vector Search index must use 768 dimensions on the `embedding` field.
 > **Environment Configuration**: We require a `GEMINI_API_KEY` to be set in `backend/.env` for live operations.
 ---
 ## Proposed Changes
@@ -33,7 +33,7 @@ This plan details the implementation of Team C's AI capabilities, featuring Gemi
 ---
 ### Component 3: Database & Schemas
 #### [MODIFY] [Question.js](file:///c:/Desktop/FAQ-VLED-main/backend/models/Question.js)
-- Update validation of `embedding` field to support both `1536` and `384` dimensions.
+- Update validation of `embedding` field to support 768-dimension Gemini vectors.
 - Add fields for moderation:
   - `isReported: { type: Boolean, default: false }`
   - `reportReason: { type: String, default: "" }`
