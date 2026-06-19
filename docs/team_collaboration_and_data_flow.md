@@ -7,15 +7,15 @@ This guide explains how our **11-member team** is divided into sub-teams and how
 ## 1. Team Responsibilities
 
 Think of building CrowdFAQ like building a house:
-* 🎨 **Team B (Frontend)** builds the **rooms, paint, and doors** (what the user sees on their screen).
-* 🔧 **Team A (Backend & DB)** builds the **pipes, wires, and storage** under the floors (saving users, questions, and answers to the database).
+* 🎨 **Team A (Frontend)** builds the **rooms, paint, and doors** (what the user sees on their screen).
+* 🔧 **Team B (Backend & DB)** builds the **pipes, wires, and storage** under the floors (saving users, questions, and answers to the database).
 * 🧠 **Team C (AI & QA)** builds the **smart assistant** (the AI brain that reads questions) and inspects the building to make sure nothing breaks.
 
 ---
 
 ## 2. Information Exchanged Between Teams
 
-### 2.1 Team B (Frontend) ◄──► Team A (Backend)
+### 2.1 Team A (Frontend) ◄──► Team B (Backend)
 This exchange connects the website screen with the database.
 
 * **What Frontend sends to Backend (Backend's Input)**:
@@ -25,7 +25,7 @@ This exchange connects the website screen with the database.
   * Saved posts to show on screen (like lists of questions, user profiles, points, and badges).
   * Status updates (like "Success" or "Wrong password error").
 
-### 2.2 Team A (Backend) ◄──► Team C (AI & QA)
+### 2.2 Team B (Backend) ◄──► Team C (AI & QA)
 This exchange connects the server logic with the smart AI tools.
 
 * **What Backend sends to AI (AI's Input)**:
@@ -35,7 +35,7 @@ This exchange connects the server logic with the smart AI tools.
   * Text summaries of answers.
   * Recommended tags (like: `Admissions`, `Scholarships`).
 
-### 2.3 Team B (Frontend) ◄──► Team C (AI & QA)
+### 2.3 Team A (Frontend) ◄──► Team C (AI & QA)
 This exchange connects the user's direct screen actions with the AI.
 
 * **What Frontend sends to AI (AI's Input)**:
@@ -45,3 +45,4 @@ This exchange connects the user's direct screen actions with the AI.
   * The chatbot's reply.
   * Warning alerts to show on screen (like *"Show warning modal: duplicate question found"*).
   * Suggested tags to click on.
+
