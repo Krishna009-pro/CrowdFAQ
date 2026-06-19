@@ -5,10 +5,10 @@ This document lists the backend tests the team should add for CrowdFAQ.
 Automated test files should be created in:
 
 ```text
-backend/tests/
+testing/
 ```
 
-This folder is documentation only; do not place runnable Jest files here unless the test script is changed to include this folder.
+This document is documentation only; do not place runnable Jest files here unless the test script is changed to include this folder.
 
 ## Test Command
 
@@ -23,7 +23,7 @@ npm.cmd run test --workspace backend
 Current test file:
 
 ```text
-backend/tests/triage.test.js
+testing/triage.test.js
 ```
 
 Current coverage:
@@ -38,13 +38,11 @@ GET /api/v1/search without q
 Create these files:
 
 ```text
-backend/tests/health.test.js
-backend/tests/auth.test.js
-backend/tests/user.test.js
-backend/tests/question.test.js
-backend/tests/answer.test.js
-backend/tests/search.test.js
-backend/tests/admin.test.js
+testing/health.test.js
+testing/auth.test.js
+testing/user.test.js
+testing/question.test.js
+testing/answer.test.js
 ```
 
 ## Shared Test Approach
@@ -77,7 +75,7 @@ Admin/QA member
 File:
 
 ```text
-backend/tests/health.test.js
+testing/health.test.js
 ```
 
 Test cases:
@@ -100,7 +98,7 @@ Auth/User member
 File:
 
 ```text
-backend/tests/auth.test.js
+testing/auth.test.js
 ```
 
 Endpoints:
@@ -120,7 +118,7 @@ Register stores passwordHash, not plain password
 Register rejects missing displayName
 Register rejects missing email
 Register rejects invalid email
-Register handles duplicate email safely
+Register rejects duplicate email safely
 Login succeeds with correct credentials
 Login rejects wrong password
 Login rejects unknown email
@@ -141,7 +139,7 @@ Auth/User member
 File:
 
 ```text
-backend/tests/user.test.js
+testing/user.test.js
 ```
 
 Endpoints:
@@ -175,7 +173,7 @@ Questions member
 File:
 
 ```text
-backend/tests/question.test.js
+testing/question.test.js
 ```
 
 Endpoints:
@@ -222,7 +220,7 @@ Answers member
 File:
 
 ```text
-backend/tests/answer.test.js
+testing/answer.test.js
 ```
 
 Endpoints:
@@ -272,8 +270,8 @@ Search/AI member
 Files:
 
 ```text
-backend/tests/search.test.js
-backend/tests/ai.test.js
+testing/search.test.js
+testing/ai.test.js
 ```
 
 Endpoints:
@@ -322,7 +320,7 @@ Admin/QA member
 File:
 
 ```text
-backend/tests/admin.test.js
+testing/admin.test.js
 ```
 
 Endpoints:
@@ -367,7 +365,7 @@ Admin/QA member
 Potential file:
 
 ```text
-backend/tests/socket.test.js
+testing/socket.test.js
 ```
 
 Test cases:
@@ -406,4 +404,3 @@ No passwordHash returned in API responses
 Protected routes tested for unauthenticated access
 Admin routes tested for role restrictions
 ```
-

@@ -1,14 +1,14 @@
 # CrowdFAQ Testing Guide
 
-This folder contains testing documentation and test plans for the CrowdFAQ project.
+This document contains testing documentation and test plans for the CrowdFAQ project.
 
 Actual automated backend tests currently live in:
 
 ```text
-backend/tests/
+testing/
 ```
 
-The `testing/` folder is used for team-facing testing plans, checklists, and manual QA notes.
+The testing plans, checklists, and manual QA notes are now located in the `docs/` folder.
 
 ## Current Testing Stack
 
@@ -47,28 +47,26 @@ npm.cmd test
 
 Detailed backend testing plan:
 
-```text
-testing/backend/README.md
-```
+*   [backend_testing_plan.md](file:///c:/Users/kkp18/OneDrive/Pictures/Documents/IIT/CrowdFAQ/docs/backend_testing_plan.md)
 
 ## Backend Test File Location
 
 Backend test files should be added here:
 
 ```text
-backend/tests/
+testing/
 ```
 
 Recommended files:
 
 ```text
-backend/tests/auth.test.js
-backend/tests/user.test.js
-backend/tests/question.test.js
-backend/tests/answer.test.js
-backend/tests/search.test.js
-backend/tests/admin.test.js
-backend/tests/health.test.js
+testing/auth.test.js
+testing/user.test.js
+testing/question.test.js
+testing/answer.test.js
+testing/search.test.js
+testing/admin.test.js
+testing/health.test.js
 ```
 
 ## Testing Rules
@@ -79,4 +77,3 @@ backend/tests/health.test.js
 - Test success cases and failure cases.
 - Keep tests close to the backend behavior, not frontend UI behavior.
 - Run tests before pushing a backend branch.
-

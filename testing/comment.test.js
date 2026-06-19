@@ -6,7 +6,7 @@ const questionId = "507f1f77bcf86cd799439015";
 const answerId = "507f1f77bcf86cd799439016";
 const commentId = "507f1f77bcf86cd799439018";
 
-jest.mock("../middleware/authMiddleware", () => ({
+jest.mock("../backend/middleware/authMiddleware", () => ({
   protect: (req, res, next) => {
     req.user = {
       _id: userId,
@@ -19,26 +19,26 @@ jest.mock("../middleware/authMiddleware", () => ({
   },
 }));
 
-jest.mock("../models/Question", () => ({
+jest.mock("../backend/models/Question", () => ({
   exists: jest.fn(),
   findOne: jest.fn(),
 }));
 
-jest.mock("../models/Answer", () => ({
+jest.mock("../backend/models/Answer", () => ({
   exists: jest.fn(),
 }));
 
-jest.mock("../models/Comment", () => ({
+jest.mock("../backend/models/Comment", () => ({
   create: jest.fn(),
   findById: jest.fn(),
 }));
 
-const Question = require("../models/Question");
-const Answer = require("../models/Answer");
-const Comment = require("../models/Comment");
-const questionRoutes = require("../routes/questionRoutes");
-const answerRoutes = require("../routes/answerRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+const Question = require("../backend/models/Question");
+const Answer = require("../backend/models/Answer");
+const Comment = require("../backend/models/Comment");
+const questionRoutes = require("../backend/routes/questionRoutes");
+const answerRoutes = require("../backend/routes/answerRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createTestApp = () => {
   const app = express();

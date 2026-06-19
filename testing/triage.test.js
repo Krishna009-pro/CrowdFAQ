@@ -1,20 +1,20 @@
 const express = require("express");
 const request = require("supertest");
 
-jest.mock("../services/aiService", () => ({
+jest.mock("../backend/services/aiService", () => ({
   generateEmbedding: jest.fn(),
   generateProvisionalDraft: jest.fn(),
 }));
 
-jest.mock("../models/Question", () => ({
+jest.mock("../backend/models/Question", () => ({
   aggregate: jest.fn(),
   find: jest.fn(),
 }));
 
-const Question = require("../models/Question");
-const { generateEmbedding } = require("../services/aiService");
-const searchRoutes = require("../routes/searchRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+const Question = require("../backend/models/Question");
+const { generateEmbedding } = require("../backend/services/aiService");
+const searchRoutes = require("../backend/routes/searchRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createTestApp = () => {
   const app = express();

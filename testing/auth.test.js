@@ -3,16 +3,16 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const request = require("supertest");
 
-jest.mock("../models/User", () => ({
+jest.mock("../backend/models/User", () => ({
   findOne: jest.fn(),
   findById: jest.fn(),
   create: jest.fn(),
   hashPassword: jest.fn(),
 }));
 
-const User = require("../models/User");
-const authRoutes = require("../routes/authRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+const User = require("../backend/models/User");
+const authRoutes = require("../backend/routes/authRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createTestApp = () => {
   const app = express();

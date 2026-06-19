@@ -4,7 +4,7 @@ const request = require("supertest");
 const userId = "507f1f77bcf86cd799439014";
 const notificationId = "507f1f77bcf86cd799439017";
 
-jest.mock("../middleware/authMiddleware", () => ({
+jest.mock("../backend/middleware/authMiddleware", () => ({
   protect: (req, res, next) => {
     req.user = {
       _id: userId,
@@ -14,15 +14,15 @@ jest.mock("../middleware/authMiddleware", () => ({
   },
 }));
 
-jest.mock("../models/Notification", () => ({
+jest.mock("../backend/models/Notification", () => ({
   find: jest.fn(),
   findOneAndUpdate: jest.fn(),
   updateMany: jest.fn(),
 }));
 
-const Notification = require("../models/Notification");
-const notificationRoutes = require("../routes/notificationRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+const Notification = require("../backend/models/Notification");
+const notificationRoutes = require("../backend/routes/notificationRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createTestApp = () => {
   const app = express();

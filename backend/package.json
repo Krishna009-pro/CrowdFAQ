@@ -31,5 +31,14 @@
     "cross-env": "^10.1.0",
     "jest": "^30.4.2",
     "supertest": "^7.2.2"
+  },
+  "jest": {
+    "roots": [
+      "<rootDir>/../testing"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "<rootDir>/node_modules"
+    ]
   }
 }

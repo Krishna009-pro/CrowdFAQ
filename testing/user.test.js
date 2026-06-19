@@ -3,24 +3,24 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const request = require("supertest");
 
-jest.mock("../models/User", () => ({
+jest.mock("../backend/models/User", () => ({
   findById: jest.fn(),
   findByIdAndUpdate: jest.fn(),
 }));
 
-jest.mock("../models/Question", () => ({
+jest.mock("../backend/models/Question", () => ({
   find: jest.fn(),
 }));
 
-jest.mock("../models/Answer", () => ({
+jest.mock("../backend/models/Answer", () => ({
   find: jest.fn(),
 }));
 
-const Answer = require("../models/Answer");
-const Question = require("../models/Question");
-const User = require("../models/User");
-const userRoutes = require("../routes/userRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+const Answer = require("../backend/models/Answer");
+const Question = require("../backend/models/Question");
+const User = require("../backend/models/User");
+const userRoutes = require("../backend/routes/userRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createTestApp = () => {
   const app = express();

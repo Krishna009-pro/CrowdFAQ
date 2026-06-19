@@ -36,8 +36,7 @@ CrowdFAQ/
   backend/      Express API, controllers, routes, schemas, and seeding scripts
   frontend/     TypeScript React application, Craco configuration, and Tailwind design system
   database/     Database-related project files and backup assets
-  docs/         Technical specifications, team guides, and moderation API notes
-  testing/      E2E and component-level testing support files
+  docs/         Technical specifications, team guides, testing plans, and moderation API notes
 ```
 
 ## Prerequisites

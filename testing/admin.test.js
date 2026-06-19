@@ -9,7 +9,7 @@ const userId = "507f1f77bcf86cd799439014";
 const questionId = "507f1f77bcf86cd799439015";
 const answerId = "507f1f77bcf86cd799439016";
 
-jest.mock("../middleware/authMiddleware", () => ({
+jest.mock("../backend/middleware/authMiddleware", () => ({
   protect: (req, res, next) => {
     req.user = {
       _id: req.headers["x-user-id"] || adminId,
@@ -19,14 +19,14 @@ jest.mock("../middleware/authMiddleware", () => ({
   },
 }));
 
-jest.mock("../models/User", () => ({
+jest.mock("../backend/models/User", () => ({
   countDocuments: jest.fn(),
   aggregate: jest.fn(),
   find: jest.fn(),
   findByIdAndUpdate: jest.fn(),
 }));
 
-jest.mock("../models/Question", () => ({
+jest.mock("../backend/models/Question", () => ({
   countDocuments: jest.fn(),
   aggregate: jest.fn(),
   find: jest.fn(),
@@ -34,7 +34,7 @@ jest.mock("../models/Question", () => ({
   findById: jest.fn(),
 }));
 
-jest.mock("../models/Answer", () => ({
+jest.mock("../backend/models/Answer", () => ({
   countDocuments: jest.fn(),
   find: jest.fn(),
   findById: jest.fn(),
@@ -43,19 +43,19 @@ jest.mock("../models/Answer", () => ({
   deleteMany: jest.fn(),
 }));
 
-jest.mock("../models/Report", () => ({
+jest.mock("../backend/models/Report", () => ({
   countDocuments: jest.fn(),
   find: jest.fn(),
   findByIdAndUpdate: jest.fn(),
   findById: jest.fn(),
 }));
 
-const User = require("../models/User");
-const Question = require("../models/Question");
-const Answer = require("../models/Answer");
-const Report = require("../models/Report");
-const adminRoutes = require("../routes/adminRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+const User = require("../backend/models/User");
+const Question = require("../backend/models/Question");
+const Answer = require("../backend/models/Answer");
+const Report = require("../backend/models/Report");
+const adminRoutes = require("../backend/routes/adminRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createIoMock = () => {
   const roomEmit = jest.fn();

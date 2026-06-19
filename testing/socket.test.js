@@ -1,4 +1,4 @@
-const { createSocketEventBridge } = require("../config/socket");
+const { createSocketEventBridge } = require("../backend/config/socket");
 
 describe("Socket event bridge", () => {
   it("emits both internal and public alias events for room-scoped answer events", () => {

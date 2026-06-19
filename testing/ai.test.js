@@ -1,37 +1,37 @@
 const express = require("express");
 const request = require("supertest");
 
-jest.mock("../services/aiService", () => ({
+jest.mock("../backend/services/aiService", () => ({
   generateChatbotAnswer: jest.fn(),
   generateEmbedding: jest.fn(),
   summarizeAnswers: jest.fn(),
 }));
 
-jest.mock("../services/groqService", () => ({
+jest.mock("../backend/services/groqService", () => ({
   groqChatWithHistory: jest.fn(),
   GROQ_CHAT_MODEL: "llama-3.3-70b-versatile",
 }));
 
-jest.mock("../models/Question", () => ({
+jest.mock("../backend/models/Question", () => ({
   aggregate: jest.fn(),
   find: jest.fn(),
   findById: jest.fn(),
 }));
 
-jest.mock("../models/Answer", () => ({
+jest.mock("../backend/models/Answer", () => ({
   find: jest.fn(),
 }));
 
-const Answer = require("../models/Answer");
-const Question = require("../models/Question");
+const Answer = require("../backend/models/Answer");
+const Question = require("../backend/models/Question");
 const {
   generateEmbedding,
-} = require("../services/aiService");
+} = require("../backend/services/aiService");
 const {
   groqChatWithHistory,
-} = require("../services/groqService");
-const aiRoutes = require("../routes/aiRoutes");
-const { errorHandler } = require("../middleware/errorHandler");
+} = require("../backend/services/groqService");
+const aiRoutes = require("../backend/routes/aiRoutes");
+const { errorHandler } = require("../backend/middleware/errorHandler");
 
 const createTestApp = () => {
   const app = express();
